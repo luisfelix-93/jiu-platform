@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { AuthService } from "../services/AuthService";
+import { ZodError } from "zod";
 
 export class AuthController {
     static async register(req: Request, res: Response) {
@@ -7,6 +8,13 @@ export class AuthController {
             const result = await AuthService.register(req.body);
             res.status(201).json(result);
         } catch (error: any) {
+            if (error instanceof ZodError) {
+                return res.status(400).json({ error: "Validation error", details: error.issues });
+            }
+            if (error.message === "User already exists") {
+                return res.status(409).json({ error: "User already exists" });
+            }
+            console.error("Registration error:", error);
             res.status(400).json({ error: error.message });
         }
     }
