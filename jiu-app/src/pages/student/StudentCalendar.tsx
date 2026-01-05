@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
-import { format, parse, startOfWeek, getDay, isAfter, isToday, startOfDay } from 'date-fns';
+import { format, parse, startOfWeek, getDay, isAfter, isToday } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';

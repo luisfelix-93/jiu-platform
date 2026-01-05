@@ -7,7 +7,7 @@ import { Calendar, CheckCircle2 } from 'lucide-react';
 import { useAuthStore } from '../../stores/useAuthStore';
 import { DashboardService, type DashboardData } from '../../services/dashboard.service';
 import { LessonService } from '../../services/lesson.service';
-import { format, isToday, isAfter } from 'date-fns';
+import { format, isToday, isAfter, parseISO, addMinutes } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 export const StudentHome = () => {
@@ -99,7 +99,7 @@ export const StudentHome = () => {
                                     <div key={lesson.id} className="flex items-center justify-between p-4 rounded-lg bg-neutral-50 border border-neutral-100">
                                         <div className="flex items-center gap-4">
                                             <div className="bg-primary/10 text-primary p-3 rounded-md font-bold text-center w-16">
-                                                <span className="block text-xs uppercase">{format(new Date(lesson.date), 'dd MMM', { locale: ptBR })}</span>
+                                                <span className="block text-xs uppercase">{format(addMinutes(parseISO(lesson.date), new Date().getTimezoneOffset()), 'dd MMM', { locale: ptBR })}</span>
                                                 <span>{lesson.startTime ? lesson.startTime.slice(0, 5) : '00:00'}</span>
                                             </div>
                                             <div>
@@ -153,7 +153,7 @@ export const StudentHome = () => {
                     <div>
                         <h4 className="text-sm font-semibold text-neutral-500 uppercase tracking-wider">Horário</h4>
                         <p className="text-neutral-800">
-                            {selectedLesson && format(new Date(selectedLesson.date), "dd 'de' MMMM", { locale: ptBR })}
+                            {selectedLesson && format(addMinutes(parseISO(selectedLesson.date), new Date().getTimezoneOffset()), "dd 'de' MMMM", { locale: ptBR })}
                             {' às '}
                             {selectedLesson?.startTime}
                         </p>

@@ -25,6 +25,13 @@ app.use("/api/attendance", attendanceRoutes);
 app.use("/api/content", contentRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 
+app.get("/health", (req, res) => {
+    res.json({
+        status: "UP",
+        timestamp: new Date().toISOString()
+    });
+});
+
 app.get("/", (req, res) => {
     res.json({ message: "Jiu-Jitsu Platform API is running" });
 });
