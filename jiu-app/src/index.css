@@ -1,0 +1,62 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: var(--primary);
+  --color-secondary: var(--secondary);
+  --color-accent: var(--accent);
+  --color-neutral-50: var(--neutral-50);
+  --color-neutral-100: var(--neutral-100);
+  --color-neutral-200: var(--neutral-200);
+  --color-neutral-300: var(--neutral-300);
+  --color-neutral-500: var(--neutral-500);
+  --color-neutral-600: var(--neutral-600);
+  --color-neutral-700: var(--neutral-700);
+  --color-neutral-800: var(--neutral-800);
+  --color-success: var(--success);
+  --color-error: var(--error);
+}
+
+:root {
+  /* Light Mode Colors (Default) */
+  --primary: #B91C1C;     /* Crimson-700 */
+  --secondary: #0F172A;   /* Slate-900 */
+  --accent: #B45309;      /* Amber-700 */
+  
+  --neutral-50: #F8FAFC;  /* Slate-50 */
+  --neutral-100: #F1F5F9; /* Slate-100 */
+  --neutral-200: #E2E8F0; /* Slate-200 */
+  --neutral-300: #CBD5E1; /* Slate-300 */
+  --neutral-500: #64748B; /* Slate-500 */
+  --neutral-600: #475569; /* Slate-600 */
+  --neutral-700: #334155; /* Slate-700 */
+  --neutral-800: #1E293B; /* Slate-800 */
+  
+  --success: #059669;     /* Emerald-600 */
+  --error: #DC2626;       /* Red-600 */
+}
+
+.dark {
+  /* Dark Mode Colors */
+  --primary: #EF4444;     /* Red-500 - lighter for dark mode */
+  --secondary: #F8FAFC;   /* Slate-50 - inverted from Slate-900 */
+  --accent: #F59E0B;      /* Amber-500 - lighter for dark mode */
+
+  /* Inverted Neutral Scale */
+  --neutral-50: #0F172A;  /* Was Slate-50, now Slate-900 (bg) */
+  --neutral-100: #1E293B; /* Was Slate-100, now Slate-800 */
+  --neutral-200: #334155; /* Was Slate-200, now Slate-700 */
+  --neutral-300: #475569; /* Was Slate-300, now Slate-600 */
+  --neutral-500: #94A3B8; /* Was Slate-500, now Slate-400 */
+  --neutral-600: #CBD5E1; /* Was Slate-600, now Slate-300 */
+  --neutral-700: #E2E8F0; /* Was Slate-700, now Slate-200 */
+  --neutral-800: #F8FAFC; /* Was Slate-800, now Slate-50 (text) */
+  
+  --success: #34D399;     /* Emerald-400 - lighter */
+  --error: #F87171;       /* Red-400 - lighter */
+}
+
+@layer base {
+  body {
+    @apply bg-neutral-50 text-neutral-800 transition-colors duration-200;
+  }
+}
