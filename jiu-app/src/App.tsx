@@ -38,7 +38,7 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode;
 };
 
 function App() {
-  const { isAuthenticated, user, checkAuth } = useAuthStore();
+  const { checkAuth } = useAuthStore();
   const { theme } = useThemeStore();
 
   useEffect(() => {
