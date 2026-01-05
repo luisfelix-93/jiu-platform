@@ -1,4 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import { AuthLayout } from './components/layout/AuthLayout';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
@@ -103,6 +105,8 @@ function App() {
           <Route path="conteudos" element={<ProfessorContent />} />
         </Route>
       </Routes>
+      <Analytics />
+      <SpeedInsights />
     </BrowserRouter>
   );
 }
