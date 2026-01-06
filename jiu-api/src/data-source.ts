@@ -1,6 +1,16 @@
 import "reflect-metadata";
 import { DataSource } from "typeorm";
 import * as dotenv from "dotenv";
+import { User } from "./entities/User";
+import { Academy } from "./entities/Academy";
+import { Attendance } from "./entities/Attendance";
+import { Class } from "./entities/Class";
+import { ClassEnrollment } from "./entities/ClassEnrollment";
+import { LessonContent } from "./entities/LessonContent";
+import { Profile } from "./entities/Profile";
+import { RefreshToken } from "./entities/RefreshToken";
+import { ScheduledLesson } from "./entities/ScheduledLesson";
+import { StudentProgress } from "./entities/StudentProgress";
 
 dotenv.config();
 
@@ -12,10 +22,21 @@ export const AppDataSource = new DataSource({
     username: process.env.DB_USER || "postgres",
     password: process.env.DB_PASSWORD || "postgres",
     database: process.env.DB_NAME || "jiujitsu",
-    synchronize: true, // Should be false in production
+    synchronize: true, // Should be false in production, but keeping true for auto-migration
     logging: false,
-    entities: [process.env.NODE_ENV === "production" ? "dist/entities/**/*.js" : "src/entities/**/*.ts"],
-    migrations: [process.env.NODE_ENV === "production" ? "dist/migrations/**/*.js" : "src/migrations/**/*.ts"],
-    subscribers: [process.env.NODE_ENV === "production" ? "dist/subscribers/**/*.js" : "src/subscribers/**/*.ts"],
+    entities: [
+        User,
+        Academy,
+        Attendance,
+        Class,
+        ClassEnrollment,
+        LessonContent,
+        Profile,
+        RefreshToken,
+        ScheduledLesson,
+        StudentProgress
+    ],
+    migrations: [],
+    subscribers: [],
     ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
 });
