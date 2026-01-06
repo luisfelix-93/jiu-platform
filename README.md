@@ -17,8 +17,8 @@ O projeto funciona como um monorepo contendo:
 - **Linguagem**: TypeScript
 - **Banco de Dados**: PostgreSQL
 - **ORM**: TypeORM
-- **Autenticação**: JWT (JSON Web Tokens)
-- **Validação**: Zod
+- **Autenticação**: JWT (via HttpOnly Cookies)
+- **Segurança**: Express Rate Limit, Helmet, Zod
 
 ### Frontend (jiu-app)
 - **Framework**: React
@@ -47,7 +47,7 @@ cd jiu-api
 npm install
 ```
 
-Configure as variáveis de ambiente. Crie um arquivo `.env` na pasta `jiu-api` com base no exemplo (se houver) ou configure as credenciais do seu banco de dados PostgreSQL.
+Configure as variáveis de ambiente. Crie um arquivo `.env` na pasta `jiu-api` com base no exemplo e certifique-se de definir `JWT_SECRET` e `FRONTEND_URL`.
 
 Para iniciar a API em modo de desenvolvimento:
 
@@ -75,8 +75,11 @@ npm run dev
 ### jiu-api
 - `npm run dev`: Inicia o servidor de desenvolvimento com hot-reload.
 - `npm run build`: Compila o TypeScript para JavaScript (pasta `dist`).
-- `npm run start`: Inicia a versão compilada em produção.
+- `npm run start`: Inicia a versão compilada em produção (roda migrações antes).
 - `npm run typeorm`: Executa comandos do CLI do TypeORM.
+- `npm run migration:generate`: Gera uma nova migração com base nas alterações das entidades.
+- `npm run migration:run`: Executa as migrações pendentes.
+- `npm run migration:revert`: Reverte a última migração executada.
 
 ### jiu-app
 - `npm run dev`: Inicia o servidor de desenvolvimento Vite.

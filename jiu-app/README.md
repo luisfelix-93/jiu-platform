@@ -1,73 +1,79 @@
-# React + TypeScript + Vite
+# Jiu-Jitsu Platform App
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Interface web moderna para a plataforma de gestão de academias de Jiu-Jitsu. Desenvolvida com React, TypeScript e TailwindCSS, focada em performance e usabilidade.
 
-Currently, two official plugins are available:
+## 🚀 Tecnologias
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Framework**: React 18
+- **Build Tool**: Vite
+- **Linguagem**: TypeScript
+- **Estilização**: TailwindCSS (Design System customizado)
+- **State Management**: Zustand
+- **Formulários**: React Hook Form + Zod
+- **Calendário**: React Big Calendar
+- **HTTP Client**: Axios
+- **Ícones**: Lucide React
 
-## React Compiler
+## ✨ Funcionalidades
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### Autenticação
+- Login e Registro seguros.
+- Sessão gerenciada via **HttpOnly Cookies** (segurança contra XSS).
+- Renovação automática de token (Refresh Token).
 
-## Expanding the ESLint configuration
+### Portal do Professor
+- **Dashboard**: Visão geral de alunos, aulas e métricas.
+- **Gestão de Aulas**: Criação e agendamento de aulas.
+- **Gestão de Turmas**: Criação de turmas e matrícula de alunos.
+- **Chamada**: Registro de presença rápido e intuitivo.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### Portal do Aluno
+- **Dashboard**: Acompanhamento de progresso (graduação, presenças).
+- **Calendário**: Visualização de aulas agendadas.
+- **Histórico**: Registro completo de treinos.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## 🛠️ Instalação e Execução
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+1. **Entre na pasta do projeto**:
+   ```bash
+   cd jiu-app
+   ```
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+2. **Instale as dependências**:
+   ```bash
+   npm install
+   ```
+
+3. **Inicie o servidor de desenvolvimento**:
+   ```bash
+   npm run dev
+   ```
+   A aplicação estará disponível em `http://localhost:5173`.
+
+## 🔒 Fluxo de Autenticação
+
+A aplicação não armazena tokens sensíveis (Access Token) no `localStorage` ou `sessionStorage`.
+Em vez disso, utiliza **Cookies HttpOnly** definidos pelo backend.
+
+- O cliente HTTP (`axios` em `src/lib/api.ts`) está configurado com `withCredentials: true`.
+- O navegador envia/recebe os cookies automaticamente em cada requisição para a API.
+- Em caso de erro 401 (Não autorizado), a aplicação redireciona para o login.
+
+## 🗂️ Estrutura de Pastas
+
+```
+src/
+├── components/     # Componentes Reutilizáveis (UI Kit)
+├── layouts/        # Layouts de página (Auth, Dashboard)
+├── lib/            # Configurações de libs (Axios, Utils)
+├── pages/          # Páginas da aplicação
+├── services/       # Camada de serviço (Chamadas API)
+├── stores/         # Gerenciamento de Estado Global (Zustand)
+├── types/          # Definições de Tipos TypeScript
+└── App.tsx         # Rotas e Configuração Principal
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## 🎨 Design System
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+O projeto utiliza um sistema de design baseado em TailwindCSS. As cores e tokens estão configurados em `tailwind.config.js`.
+Componentes base como Button, Input, Card e Modal estão localizados em `src/components/ui`.
