@@ -62,7 +62,8 @@ export class AuthService {
 
         // 2. Verify jwt
         try {
-            jwt.verify(token, process.env.JWT_SECRET!);
+            if (!process.env.JWT_SECRET) throw new Error("JWT_SECRET is not defined");
+            jwt.verify(token, process.env.JWT_SECRET);
         } catch (err) {
             throw new Error("Invalid refresh token");
         }
@@ -80,15 +81,19 @@ export class AuthService {
     }
 
     private static async generateTokens(user: User) {
+        if (!process.env.JWT_SECRET) {
+            throw new Error("JWT_SECRET is not defined");
+        }
+
         const accessToken = jwt.sign(
             { userId: user.id, email: user.email, role: user.role },
-            process.env.JWT_SECRET || "secret",
+            process.env.JWT_SECRET,
             { expiresIn: (process.env.JWT_EXPIRES_IN || "15m") as any }
         );
 
         const refreshToken = jwt.sign(
             { userId: user.id },
-            process.env.JWT_SECRET || "secret",
+            process.env.JWT_SECRET,
             { expiresIn: (process.env.REFRESH_TOKEN_EXPIRES_IN || "7d") as any }
         );
 

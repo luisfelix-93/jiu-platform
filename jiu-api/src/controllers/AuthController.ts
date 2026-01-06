@@ -5,7 +5,7 @@ import { ZodError } from "zod";
 export class AuthController {
     static async register(req: Request, res: Response) {
         try {
-            console.log("Registering user with body:", JSON.stringify(req.body, null, 2));
+            console.log("Registering user");
             const result = await AuthService.register(req.body);
             res.status(201).json(result);
         } catch (error: any) {

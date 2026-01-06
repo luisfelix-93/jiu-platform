@@ -12,7 +12,10 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
     const [, token] = authHeader.split(" ");
 
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || "secret");
+        if (!process.env.JWT_SECRET) {
+            throw new Error("JWT_SECRET is not defined");
+        }
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
         (req as any).user = decoded; // TODO: Fix type definition
         next();
     } catch (err) {

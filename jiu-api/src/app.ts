@@ -13,7 +13,21 @@ import dashboardRoutes from "./routes/dashboard.routes";
 
 const app = express();
 
-app.use(cors());
+const allowedOrigins = [
+    "http://localhost:5173",
+    process.env.FRONTEND_URL
+].filter(Boolean) as string[];
+
+app.use(cors({
+    origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error("Not allowed by CORS"));
+        }
+    },
+    credentials: true,
+}));
 app.use(helmet());
 app.use(express.json());
 
@@ -37,6 +51,9 @@ app.get("/", (req, res) => {
 });
 
 app.get("/api/debug", async (req, res) => {
+    if (process.env.NODE_ENV === "production") {
+        return res.status(404).json({ message: "Not found" });
+    }
     try {
         const tables = await import("./data-source").then(m => m.AppDataSource.query("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'"));
         const users = await import("./data-source").then(m => m.AppDataSource.query("SELECT count(*) FROM users"));

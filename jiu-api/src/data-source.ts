@@ -22,7 +22,7 @@ export const AppDataSource = new DataSource({
     username: process.env.DB_USER || "postgres",
     password: process.env.DB_PASSWORD || "postgres",
     database: process.env.DB_NAME || "jiujitsu",
-    synchronize: true, // Should be false in production, but keeping true for auto-migration
+    synchronize: process.env.NODE_ENV !== "production", // Should be false in production, but keeping true for auto-migration
     logging: false,
     entities: [
         User,
@@ -36,7 +36,7 @@ export const AppDataSource = new DataSource({
         ScheduledLesson,
         StudentProgress
     ],
-    migrations: [],
+    migrations: [__dirname + "/migrations/*{.ts,.js}"],
     subscribers: [],
     ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
 });
