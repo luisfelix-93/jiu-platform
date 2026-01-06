@@ -1,8 +1,28 @@
-# Resumo dos Últimos 3 Commits
+# Resumo dos Últimos 4 Commits
 
-Este documento apresenta um resumo detalhado das alterações realizadas nos últimos 3 commits do projeto `jiu-platform`.
+Este documento apresenta um resumo detalhado das alterações realizadas nos últimos 4 commits do projeto `jiu-platform`.
 
-## 1. Commit: `2362c2373` - Rate Limiting e Correção de Datas
+## 1. Commit: `0b15157` - GitHub Actions e Atualização de Documentação
+**Data:** 06/01/2026 14:24
+**Autor:** luisfelix-93
+
+### Resumo
+Este commit introduz automação via GitHub Actions para abertura de Pull Requests e atualiza significativamente a documentação do projeto (Backend, Frontend e Root).
+
+### Alterações Detalhadas
+*   **CI/CD (`.github/workflows/auto_pr.yml`)**:
+    *   Criação de um workflow de **Auto PR** que dispara ao realizar push nas branches `feature/*` ou `fix/*`.
+    *   Este action automatiza a criação de Pull Requests para a branch `main`.
+*   **Documentação**:
+    *   **Frontend (`jiu-app/README.md`)**: Reescrevida completamente a documentação, substituindo o template padrão do Vite por instruções específicas do projeto, cobrindo funcionalidades, fluxo de autenticação e instalação.
+    *   **Backend (`jiu-api/README.md`)**: Adicionadas informações críticas sobre variáveis de ambiente (`JWT_SECRET`, `FRONTEND_URL`), scripts de migração do TypeORM e detalhes de segurança (Rate Limiting).
+    *   **Root (`README.md`)**: Atualizada a seção de tecnologias e scripts disponíveis para refletir o estado atual do projeto.
+*   **Meta**:
+    *   Criação do próprio arquivo `doc/PR_Summary.md` para rastreamento de alterações.
+
+---
+
+## 2. Commit: `2362c2373` - Rate Limiting e Correção de Datas
 **Data:** 06/01/2026 14:05
 **Autor:** luisfelix-93
 
@@ -22,7 +42,7 @@ Este commit implementa mecanismos de proteção contra abuso (Rate Limiting) na 
 
 ---
 
-## 2. Commit: `6b49804d7` - Atualização de Cookies (Migração para HttpOnly)
+## 3. Commit: `6b49804d7` - Atualização de Cookies (Migração para HttpOnly)
 **Data:** 06/01/2026 13:55
 **Autor:** luisfelix-93
 
@@ -52,7 +72,7 @@ Este commit realiza uma mudança estrutural importante na autenticação, migran
 
 ---
 
-## 3. Commit: `06439d31c` - Atualizações de Segurança e Configuração
+## 4. Commit: `06439d31c` - Atualizações de Segurança e Configuração
 **Data:** 06/01/2026 13:31
 **Autor:** luisfelix-93
 
