@@ -2,6 +2,7 @@ import "reflect-metadata";
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
+import cookieParser from "cookie-parser";
 
 import authRoutes from "./routes/auth.routes";
 import userRoutes from "./routes/user.routes";
@@ -28,6 +29,7 @@ app.use(cors({
     },
     credentials: true,
 }));
+app.use(cookieParser());
 app.use(helmet());
 app.use(express.json());
 

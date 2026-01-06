@@ -2,14 +2,20 @@ import { Request, Response, NextFunction } from "express";
 import * as jwt from "jsonwebtoken";
 
 export const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
-    const authHeader = req.headers.authorization;
+    let token = req.cookies.accessToken;
 
-    if (!authHeader) {
+    if (!token && req.headers.authorization) {
+        const parts = req.headers.authorization.split(" ");
+        if (parts.length === 2) token = parts[1];
+    }
+
+    if (!token) {
         res.status(401).json({ error: "No token provided" });
         return;
     }
 
-    const [, token] = authHeader.split(" ");
+    // const [, token] = authHeader.split(" "); 
+    // ^ removed this line as token is now resolved above
 
     try {
         if (!process.env.JWT_SECRET) {

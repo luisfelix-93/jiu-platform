@@ -1,11 +1,3 @@
-
-
-
-
-
-
-
-
 import { create } from 'zustand';
 import { type AuthState, type User } from '../types/auth';
 import { AuthService } from '../services/auth.service';
@@ -16,9 +8,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
     login: async (credentials) => {
         try {
-            const { user, accessToken, refreshToken } = await AuthService.login(credentials);
-            localStorage.setItem('accessToken', accessToken);
-            localStorage.setItem('refreshToken', refreshToken);
+            const { user } = await AuthService.login(credentials);
             set({ user, isAuthenticated: true });
         } catch (error) {
             console.error("Login failed", error);
@@ -27,8 +17,6 @@ export const useAuthStore = create<AuthState>((set) => ({
     },
 
     logout: () => {
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
         set({ user: null, isAuthenticated: false });
         AuthService.logout().catch(console.error);
     },
@@ -38,17 +26,13 @@ export const useAuthStore = create<AuthState>((set) => ({
     })),
 
     checkAuth: async () => {
-        const token = localStorage.getItem('accessToken');
-        if (token) {
-            try {
-                const user = await AuthService.getMe();
-                set({ user, isAuthenticated: true });
-            } catch (error) {
-                console.error("Auth check failed", error);
-                localStorage.removeItem('accessToken');
-                localStorage.removeItem('refreshToken');
-                set({ user: null, isAuthenticated: false });
-            }
+        try {
+            // Just try to fetch the profile. If cookie is invalid/missing, it will fail (401)
+            const user = await AuthService.getMe();
+            set({ user, isAuthenticated: true });
+        } catch (error) {
+            // console.error("Auth check failed", error);
+            set({ user: null, isAuthenticated: false });
         }
     }
 }));

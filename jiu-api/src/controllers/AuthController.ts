@@ -7,7 +7,21 @@ export class AuthController {
         try {
             console.log("Registering user");
             const result = await AuthService.register(req.body);
-            res.status(201).json(result);
+
+            res.cookie("accessToken", result.accessToken, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === "production",
+                sameSite: "strict",
+                maxAge: 15 * 60 * 1000 // 15m
+            });
+            res.cookie("refreshToken", result.refreshToken, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === "production",
+                sameSite: "strict",
+                maxAge: 7 * 24 * 60 * 60 * 1000 // 7d
+            });
+
+            res.status(201).json({ user: result.user });
         } catch (error: any) {
             if (error instanceof ZodError) {
                 console.error("Zod Validation Error:", JSON.stringify(error.issues, null, 2));
@@ -24,7 +38,21 @@ export class AuthController {
     static async login(req: Request, res: Response) {
         try {
             const result = await AuthService.login(req.body);
-            res.json(result);
+
+            res.cookie("accessToken", result.accessToken, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === "production",
+                sameSite: "strict",
+                maxAge: 15 * 60 * 1000 // 15m
+            });
+            res.cookie("refreshToken", result.refreshToken, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === "production",
+                sameSite: "strict",
+                maxAge: 7 * 24 * 60 * 60 * 1000 // 7d
+            });
+
+            res.json({ user: result.user });
         } catch (error: any) {
             res.status(400).json({ error: error.message });
         }
@@ -32,9 +60,25 @@ export class AuthController {
 
     static async refresh(req: Request, res: Response) {
         try {
-            const { refreshToken } = req.body;
+            const refreshToken = req.cookies.refreshToken;
+            if (!refreshToken) throw new Error("No refresh token provided");
+
             const result = await AuthService.refreshToken(refreshToken);
-            res.json(result);
+
+            res.cookie("accessToken", result.accessToken, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === "production",
+                sameSite: "strict",
+                maxAge: 15 * 60 * 1000 // 15m
+            });
+            res.cookie("refreshToken", result.refreshToken, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === "production",
+                sameSite: "strict",
+                maxAge: 7 * 24 * 60 * 60 * 1000 // 7d
+            });
+
+            res.json({ user: result.user });
         } catch (error: any) {
             res.status(400).json({ error: error.message });
         }
