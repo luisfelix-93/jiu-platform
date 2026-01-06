@@ -5,10 +5,12 @@ import { ZodError } from "zod";
 export class AuthController {
     static async register(req: Request, res: Response) {
         try {
+            console.log("Registering user with body:", JSON.stringify(req.body, null, 2));
             const result = await AuthService.register(req.body);
             res.status(201).json(result);
         } catch (error: any) {
             if (error instanceof ZodError) {
+                console.error("Zod Validation Error:", JSON.stringify(error.issues, null, 2));
                 return res.status(400).json({ error: "Validation error", details: error.issues });
             }
             if (error.message === "User already exists") {

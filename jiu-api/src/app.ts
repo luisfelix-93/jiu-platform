@@ -36,4 +36,20 @@ app.get("/", (req, res) => {
     res.json({ message: "Jiu-Jitsu Platform API is running" });
 });
 
+app.get("/api/debug", async (req, res) => {
+    try {
+        const tables = await import("./data-source").then(m => m.AppDataSource.query("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'"));
+        const users = await import("./data-source").then(m => m.AppDataSource.query("SELECT count(*) FROM users"));
+        res.json({
+            message: "Database Debug",
+            tables,
+            userCount: users[0] || 0,
+            env: process.env.NODE_ENV,
+            entitiesLoaded: import("./data-source").then(m => m.AppDataSource.entityMetadatas.map(e => e.name))
+        });
+    } catch (error: any) {
+        res.status(500).json({ error: error.message, stack: error.stack });
+    }
+});
+
 export default app;
