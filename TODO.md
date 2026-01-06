@@ -4,11 +4,11 @@ Derived from `doc/security_specs.md`.
 
 ## Recommended Improvements
 
-- [ ] **Secure Token Storage (Frontend)**
+- [x] **Secure Token Storage (Frontend)**
     - Implement Secure, HttpOnly cookies for token storage instead of `localStorage` to mitigate XSS risks.
     - Requires backend changes to set cookies on login/refresh.
 
-- [ ] **Rate Limiting (Backend)**
+- [x] **Rate Limiting (Backend)**
     - Implement `express-rate-limit` to prevent brute-force and DDoS attacks.
     - Focus on `/api/auth/*` routes.
 

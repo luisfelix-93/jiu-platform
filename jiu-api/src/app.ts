@@ -31,6 +31,19 @@ app.use(cors({
 }));
 app.use(cookieParser());
 app.use(helmet());
+
+import { rateLimit } from "express-rate-limit";
+
+const globalLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    limit: 100, // Limit each IP to 100 requests per `window` (here, per 15 minutes).
+    standardHeaders: 'draft-7', // draft-6: `RateLimit-*` headers; draft-7: combined `RateLimit` header
+    legacyHeaders: false, // Disable the `X-RateLimit-*` headers.
+});
+
+// Apply the rate limiting middleware to all requests.
+app.use("/api", globalLimiter);
+
 app.use(express.json());
 
 app.use("/api/auth", authRoutes);
