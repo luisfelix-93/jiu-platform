@@ -7,8 +7,6 @@ import type { User } from "../types/auth";
 
 export interface AuthResponse {
     user: User;
-    accessToken: string;
-    refreshToken: string;
 }
 
 export const AuthService = {

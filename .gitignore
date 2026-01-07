@@ -42,3 +42,9 @@ yarn-error.log*
 *.njsproj
 *.sln
 *.sw?
+
+
+logs/
+
+# Documentation
+doc/security_specs.md
