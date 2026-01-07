@@ -46,6 +46,13 @@ Backend da plataforma de gestão para academias de Jiu-Jitsu. Esta API RESTful g
    JWT_SECRET=supersecretkey # OBRIGATÓRIO: Chave forte para assinar tokens
    JWT_EXPIRES_IN=15m
    REFRESH_TOKEN_EXPIRES_IN=7d
+   
+   # Configurações de Email
+   MAIL_HOST=smtp.mailtrap.io
+   MAIL_PORT=2525
+   MAIL_USER=seu_usuario
+   MAIL_PASS=sua_senha
+   MAIL_FROM=nao-responda@jiujitsu.com
    ```
 
 4. **Banco de Dados e Migrações**:
@@ -109,6 +116,10 @@ Para proteção contra abuso:
 - `GET /api/lessons` - Listar aulas
 - `POST /api/attendance/:id` - Registrar presença
 - `GET /api/dashboard` - Dados resumidos
+
+### Notificações
+O sistema envia notificações por email automaticamente em eventos importantes:
+- **Confirmação de Presença**: Enviado ao aluno quando sua presença é confirmada em uma aula.
 
 ## 🔒 Segurança
 
