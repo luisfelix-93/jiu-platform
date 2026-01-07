@@ -8,18 +8,7 @@ export class AuthController {
             console.log("Registering user");
             const result = await AuthService.register(req.body);
 
-            res.cookie("accessToken", result.accessToken, {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === "production",
-                sameSite: "strict",
-                maxAge: 15 * 60 * 1000 // 15m
-            });
-            res.cookie("refreshToken", result.refreshToken, {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === "production",
-                sameSite: "strict",
-                maxAge: 7 * 24 * 60 * 60 * 1000 // 7d
-            });
+            AuthController.setAuthCookies(res, result.accessToken, result.refreshToken);
 
             res.status(201).json({ user: result.user });
         } catch (error: any) {
@@ -39,18 +28,7 @@ export class AuthController {
         try {
             const result = await AuthService.login(req.body);
 
-            res.cookie("accessToken", result.accessToken, {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === "production",
-                sameSite: "strict",
-                maxAge: 15 * 60 * 1000 // 15m
-            });
-            res.cookie("refreshToken", result.refreshToken, {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === "production",
-                sameSite: "strict",
-                maxAge: 7 * 24 * 60 * 60 * 1000 // 7d
-            });
+            AuthController.setAuthCookies(res, result.accessToken, result.refreshToken);
 
             res.json({ user: result.user });
         } catch (error: any) {
@@ -61,26 +39,34 @@ export class AuthController {
     static async refresh(req: Request, res: Response) {
         try {
             const refreshToken = req.cookies.refreshToken;
-            if (!refreshToken) throw new Error("No refresh token provided");
+            if (!refreshToken) {
+                return res.status(401).json({ error: "No refresh token provided" });
+            }
 
             const result = await AuthService.refreshToken(refreshToken);
 
-            res.cookie("accessToken", result.accessToken, {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === "production",
-                sameSite: "strict",
-                maxAge: 15 * 60 * 1000 // 15m
-            });
-            res.cookie("refreshToken", result.refreshToken, {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === "production",
-                sameSite: "strict",
-                maxAge: 7 * 24 * 60 * 60 * 1000 // 7d
-            });
+            AuthController.setAuthCookies(res, result.accessToken, result.refreshToken);
 
             res.json({ user: result.user });
         } catch (error: any) {
             res.status(400).json({ error: error.message });
         }
+    }
+
+
+    private static setAuthCookies(res: Response, accessToken: string, refreshToken: string) {
+        const isProd = process.env.NODE_ENV === "production";
+        res.cookie("accessToken", accessToken, {
+            httpOnly: true,
+            secure: isProd,
+            sameSite: "strict",
+            maxAge: 15 * 60 * 1000 // 15m
+        });
+        res.cookie("refreshToken", refreshToken, {
+            httpOnly: true,
+            secure: isProd,
+            sameSite: "strict",
+            maxAge: 7 * 24 * 60 * 60 * 1000 // 7d
+        });
     }
 }

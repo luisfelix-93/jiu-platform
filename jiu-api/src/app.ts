@@ -3,6 +3,7 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
+import { rateLimit } from "express-rate-limit";
 
 import authRoutes from "./routes/auth.routes";
 import userRoutes from "./routes/user.routes";
@@ -16,15 +17,15 @@ const app = express();
 
 const allowedOrigins = [
     "http://localhost:5173",
-    process.env.FRONTEND_URL
-].filter(Boolean) as string[];
+    ...(process.env.FRONTEND_URL?.split(",") ?? [])
+].map(origin => origin?.trim()).filter(Boolean) as string[];
 
 app.use(cors({
     origin: (origin, callback) => {
         if (!origin || allowedOrigins.includes(origin)) {
             callback(null, true);
         } else {
-            callback(new Error("Not allowed by CORS"));
+            callback(null, false);
         }
     },
     credentials: true,
@@ -32,12 +33,10 @@ app.use(cors({
 app.use(cookieParser());
 app.use(helmet());
 
-import { rateLimit } from "express-rate-limit";
-
 const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    limit: 100, // Limit each IP to 100 requests per `window` (here, per 15 minutes).
-    standardHeaders: 'draft-7', // draft-6: `RateLimit-*` headers; draft-7: combined `RateLimit` header
+    max: 100, // Limit each IP to 100 requests per `window` (here, per 15 minutes).
+    standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
     legacyHeaders: false, // Disable the `X-RateLimit-*` headers.
 });
 
@@ -65,23 +64,22 @@ app.get("/", (req, res) => {
     res.json({ message: "Jiu-Jitsu Platform API is running" });
 });
 
-app.get("/api/debug", async (req, res) => {
-    if (process.env.NODE_ENV === "production") {
-        return res.status(404).json({ message: "Not found" });
-    }
-    try {
-        const tables = await import("./data-source").then(m => m.AppDataSource.query("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'"));
-        const users = await import("./data-source").then(m => m.AppDataSource.query("SELECT count(*) FROM users"));
-        res.json({
-            message: "Database Debug",
-            tables,
-            userCount: users[0] || 0,
-            env: process.env.NODE_ENV,
-            entitiesLoaded: import("./data-source").then(m => m.AppDataSource.entityMetadatas.map(e => e.name))
-        });
-    } catch (error: any) {
-        res.status(500).json({ error: error.message, stack: error.stack });
-    }
-});
+if (process.env.NODE_ENV !== "production") {
+    app.get("/api/debug", async (req, res) => {
+        try {
+            const tables = await import("./data-source").then(m => m.AppDataSource.query("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'"));
+            const users = await import("./data-source").then(m => m.AppDataSource.query("SELECT count(*) FROM users"));
+            res.json({
+                message: "Database Debug",
+                tables,
+                userCount: users[0] || 0,
+                env: process.env.NODE_ENV,
+                entitiesLoaded: import("./data-source").then(m => m.AppDataSource.entityMetadatas.map(e => e.name))
+            });
+        } catch (error: any) {
+            res.status(500).json({ error: error.message, stack: error.stack });
+        }
+    });
+}
 
 export default app;

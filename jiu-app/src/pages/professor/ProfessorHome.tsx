@@ -4,7 +4,7 @@ import { Button } from '../../components/ui/Button';
 import { Users } from 'lucide-react';
 import { useAuthStore } from '../../stores/useAuthStore';
 import { DashboardService } from '../../services/dashboard.service';
-import { format, parseISO, addMinutes } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 
 export const ProfessorHome = () => {
     const { user } = useAuthStore();
@@ -56,7 +56,7 @@ export const ProfessorHome = () => {
                                                 <h4 className="font-semibold text-lg">{lesson.class?.name}</h4>
                                                 <div className="flex items-center text-sm text-neutral-500 gap-2">
                                                     <Users className="h-4 w-4" />
-                                                    <span>{format(addMinutes(parseISO(lesson.date), new Date().getTimezoneOffset()), 'dd/MM/yyyy')}</span>
+                                                    <span>{lesson.date ? format(parseISO(lesson.date), 'dd/MM/yyyy') : '—'}</span>
                                                 </div>
                                             </div>
                                         </div>

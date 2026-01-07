@@ -17,6 +17,8 @@ export const useAuthStore = create<AuthState>((set) => ({
     },
 
     logout: () => {
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
         set({ user: null, isAuthenticated: false });
         AuthService.logout().catch(console.error);
     },
@@ -31,7 +33,7 @@ export const useAuthStore = create<AuthState>((set) => ({
             const user = await AuthService.getMe();
             set({ user, isAuthenticated: true });
         } catch (error) {
-            // console.error("Auth check failed", error);
+            console.debug("Auth check failed", error);
             set({ user: null, isAuthenticated: false });
         }
     }

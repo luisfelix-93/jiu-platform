@@ -4,6 +4,7 @@ import { RefreshToken } from "../entities/RefreshToken";
 import * as bcrypt from "bcrypt";
 import * as jwt from "jsonwebtoken";
 import { z } from "zod";
+import { authConfig } from "../config/auth.config";
 
 const userRepository = AppDataSource.getRepository(User);
 const refreshTokenRepository = AppDataSource.getRepository(RefreshToken);
@@ -62,8 +63,7 @@ export class AuthService {
 
         // 2. Verify jwt
         try {
-            if (!process.env.JWT_SECRET) throw new Error("JWT_SECRET is not defined");
-            jwt.verify(token, process.env.JWT_SECRET);
+            jwt.verify(token, authConfig.getJwtSecret());
         } catch (err) {
             throw new Error("Invalid refresh token");
         }
@@ -81,27 +81,25 @@ export class AuthService {
     }
 
     private static async generateTokens(user: User) {
-        if (!process.env.JWT_SECRET) {
-            throw new Error("JWT_SECRET is not defined");
-        }
+        const secret = authConfig.getJwtSecret();
 
         const accessToken = jwt.sign(
             { userId: user.id, email: user.email, role: user.role },
-            process.env.JWT_SECRET,
-            { expiresIn: (process.env.JWT_EXPIRES_IN || "15m") as any }
+            secret,
+            { expiresIn: authConfig.jwtExpiresIn as any }
         );
 
         const refreshToken = jwt.sign(
             { userId: user.id },
-            process.env.JWT_SECRET,
-            { expiresIn: (process.env.REFRESH_TOKEN_EXPIRES_IN || "7d") as any }
+            secret,
+            { expiresIn: authConfig.refreshTokenExpiresIn as any }
         );
 
         // Save refresh token
         const tokenEntity = refreshTokenRepository.create({
             user,
             token: refreshToken,
-            expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
+            expiresAt: authConfig.refreshTokenExpiresDate()
         });
         await refreshTokenRepository.save(tokenEntity);
 

@@ -12,7 +12,11 @@ import { RefreshToken } from "./entities/RefreshToken";
 import { ScheduledLesson } from "./entities/ScheduledLesson";
 import { StudentProgress } from "./entities/StudentProgress";
 
+import * as path from "path";
+
 dotenv.config();
+
+const isProd = process.env.NODE_ENV === "production";
 
 export const AppDataSource = new DataSource({
     type: "postgres",
@@ -22,7 +26,7 @@ export const AppDataSource = new DataSource({
     username: process.env.DB_USER || "postgres",
     password: process.env.DB_PASSWORD || "postgres",
     database: process.env.DB_NAME || "jiujitsu",
-    synchronize: process.env.NODE_ENV !== "production", // Should be false in production, but keeping true for auto-migration
+    synchronize: !isProd,
     logging: false,
     entities: [
         User,
@@ -36,7 +40,7 @@ export const AppDataSource = new DataSource({
         ScheduledLesson,
         StudentProgress
     ],
-    migrations: [__dirname + "/migrations/*{.ts,.js}"],
+    migrations: [path.join(__dirname, "migrations", "*.{ts,js}")],
     subscribers: [],
-    ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
+    ssl: isProd ? { rejectUnauthorized: false } : false,
 });

@@ -1,12 +1,20 @@
 import { Request, Response, NextFunction } from "express";
 import * as jwt from "jsonwebtoken";
 
+import { authConfig } from "../config/auth.config";
+
+export interface AuthRequest extends Request {
+    user?: jwt.JwtPayload | string;
+}
+
 export const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
     let token = req.cookies.accessToken;
 
     if (!token && req.headers.authorization) {
         const parts = req.headers.authorization.split(" ");
-        if (parts.length === 2) token = parts[1];
+        if (parts.length === 2 && parts[0].toLowerCase() === "bearer") {
+            token = parts[1];
+        }
     }
 
     if (!token) {
@@ -14,18 +22,21 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
         return;
     }
 
-    // const [, token] = authHeader.split(" "); 
-    // ^ removed this line as token is now resolved above
-
     try {
-        if (!process.env.JWT_SECRET) {
-            throw new Error("JWT_SECRET is not defined");
-        }
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        (req as any).user = decoded; // TODO: Fix type definition
+        const decoded = jwt.verify(token, authConfig.getJwtSecret());
+        (req as AuthRequest).user = decoded;
         next();
-    } catch (err) {
-        res.status(401).json({ error: "Invalid token" });
+    } catch (err: any) {
+        if (err.name === "TokenExpiredError") {
+            res.status(401).json({ error: "Token expired" });
+            return;
+        }
+        if (err.name === "JsonWebTokenError") {
+            res.status(401).json({ error: "Invalid token" });
+            return;
+        }
+        console.error("Auth middleware error:", err);
+        res.status(500).json({ error: "Authentication failed" });
         return;
     }
 };

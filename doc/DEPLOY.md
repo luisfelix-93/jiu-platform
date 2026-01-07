@@ -40,6 +40,8 @@ Recomendamos configurar **dois projetos separados na Vercel**, ambos conectados 
     Adicione as seguintes variáveis:
     *   `DATABASE_URL`: A string de conexão do Neon copiada anteriormente.
     *   `JWT_SECRET`: Uma string secreta e segura para assinar os tokens.
+    *   `JWT_EXPIRES_IN`: Tempo de vida do access token (ex: `15m`).
+    *   `REFRESH_TOKEN_EXPIRES_IN`: Tempo de vida do refresh token (ex: `7d`).
     *   `NODE_ENV`: `production`
     *   `PORT`: `3000` (Embora a Vercel gerencie portas, é bom manter para consistência).
     *   Outras variáveis que seu `.env` local possua (ex: configurações de e-mail, etc).

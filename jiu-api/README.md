@@ -35,7 +35,7 @@ Backend da plataforma de gestão para academias de Jiu-Jitsu. Esta API RESTful g
    ```env
    PORT=3000
    NODE_ENV=development  # ou production
-   FRONTEND_URL=http://localhost:5173 # URL do Frontend para CORS
+   FRONTEND_URL=http://localhost:5173,https://meu-app.vercel.app # URL(s) do Frontend (separadas por vírgula)
    
    DB_HOST=localhost
    DB_PORT=5432
@@ -97,7 +97,8 @@ A autenticação agora utiliza **HttpOnly Cookies**. Os tokens **NÃO** são ret
 
 ### Rate Limiting
 Para proteção contra abuso:
-- **Rotas de Auth**: Limite de **5 requisições a cada 15 minutos** por IP.
+- **Login**: Limite de **5 tentativas a cada 15 minutos** por IP.
+- **Registro**: Limite de **10 contas a cada hora** por IP.
 - **Global**: Limite de **100 requisições a cada 15 minutos** por IP.
 
 ### Demais Rotas Principais

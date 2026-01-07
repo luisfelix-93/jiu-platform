@@ -58,6 +58,7 @@ Em vez disso, utiliza **Cookies HttpOnly** definidos pelo backend.
 - O cliente HTTP (`axios` em `src/lib/api.ts`) está configurado com `withCredentials: true`.
 - O navegador envia/recebe os cookies automaticamente em cada requisição para a API.
 - Em caso de erro 401 (Não autorizado), a aplicação redireciona para o login.
+- O **Logout** realiza a limpeza de segurança (tokens legados) e invalida a sessão no servidor.
 
 ## 🗂️ Estrutura de Pastas
 
