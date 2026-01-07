@@ -1,0 +1,475 @@
+﻿commit 05eb1361353e284d07f89b244fd50818523011fa
+Author: luisfelix-93 <lfff6493@gmail.com>
+Date:   Tue Jan 6 21:01:01 2026 -0300
+
+    20260106 - corre├º├Áes code review
+---
+ doc/DEPLOY.md                                 |  2 +
+ jiu-api/README.md                             |  5 ++-
+ jiu-api/src/app.ts                            | 48 ++++++++++-----------
+ jiu-api/src/controllers/AuthController.ts     | 60 ++++++++++-----------------
+ jiu-api/src/data-source.ts                    | 10 +++--
+ jiu-api/src/middlewares/auth.middleware.ts    | 33 ++++++++++-----
+ jiu-api/src/routes/auth.routes.ts             | 20 ++++++---
+ jiu-api/src/services/AuthService.ts           | 18 ++++----
+ jiu-app/README.md                             |  1 +
+ jiu-app/src/pages/professor/ProfessorHome.tsx |  4 +-
+ jiu-app/src/stores/useAuthStore.ts            |  4 +-
+ 11 files changed, 108 insertions(+), 97 deletions(-)
+
+diff --git a/doc/DEPLOY.md b/doc/DEPLOY.md
+index dd0ef33..a7ba784 100644
+--- a/doc/DEPLOY.md
++++ b/doc/DEPLOY.md
+@@ -40,6 +40,8 @@ Recomendamos configurar **dois projetos separados na Vercel**, ambos conectados
+     Adicione as seguintes vari├íveis:
+     *   `DATABASE_URL`: A string de conex├úo do Neon copiada anteriormente.
+     *   `JWT_SECRET`: Uma string secreta e segura para assinar os tokens.
++    *   `JWT_EXPIRES_IN`: Tempo de vida do access token (ex: `15m`).
++    *   `REFRESH_TOKEN_EXPIRES_IN`: Tempo de vida do refresh token (ex: `7d`).
+     *   `NODE_ENV`: `production`
+     *   `PORT`: `3000` (Embora a Vercel gerencie portas, ├® bom manter para consist├¬ncia).
+     *   Outras vari├íveis que seu `.env` local possua (ex: configura├º├Áes de e-mail, etc).
+diff --git a/jiu-api/README.md b/jiu-api/README.md
+index 4e0a060..9e47406 100644
+--- a/jiu-api/README.md
++++ b/jiu-api/README.md
+@@ -35,7 +35,7 @@ Backend da plataforma de gest├úo para academias de Jiu-Jitsu. Esta API RESTful g
+    ```env
+    PORT=3000
+    NODE_ENV=development  # ou production
+-   FRONTEND_URL=http://localhost:5173 # URL do Frontend para CORS
++   FRONTEND_URL=http://localhost:5173,https://meu-app.vercel.app # URL(s) do Frontend (separadas por v├¡rgula)
+    
+    DB_HOST=localhost
+    DB_PORT=5432
+@@ -97,7 +97,8 @@ A autentica├º├úo agora utiliza **HttpOnly Cookies**. Os tokens **N├âO** s├úo ret
+ 
+ ### Rate Limiting
+ Para prote├º├úo contra abuso:
+-- **Rotas de Auth**: Limite de **5 requisi├º├Áes a cada 15 minutos** por IP.
++- **Login**: Limite de **5 tentativas a cada 15 minutos** por IP.
++- **Registro**: Limite de **10 contas a cada hora** por IP.
+ - **Global**: Limite de **100 requisi├º├Áes a cada 15 minutos** por IP.
+ 
+ ### Demais Rotas Principais
+diff --git a/jiu-api/src/app.ts b/jiu-api/src/app.ts
+index 317bdb2..cf85361 100644
+--- a/jiu-api/src/app.ts
++++ b/jiu-api/src/app.ts
+@@ -3,6 +3,7 @@ import express from "express";
+ import cors from "cors";
+ import helmet from "helmet";
+ import cookieParser from "cookie-parser";
++import { rateLimit } from "express-rate-limit";
+ 
+ import authRoutes from "./routes/auth.routes";
+ import userRoutes from "./routes/user.routes";
+@@ -16,15 +17,15 @@ const app = express();
+ 
+ const allowedOrigins = [
+     "http://localhost:5173",
+-    process.env.FRONTEND_URL
+-].filter(Boolean) as string[];
++    ...(process.env.FRONTEND_URL?.split(",") ?? [])
++].map(origin => origin?.trim()).filter(Boolean) as string[];
+ 
+ app.use(cors({
+     origin: (origin, callback) => {
+         if (!origin || allowedOrigins.includes(origin)) {
+             callback(null, true);
+         } else {
+-            callback(new Error("Not allowed by CORS"));
++            callback(null, false);
+         }
+     },
+     credentials: true,
+@@ -32,12 +33,10 @@ app.use(cors({
+ app.use(cookieParser());
+ app.use(helmet());
+ 
+-import { rateLimit } from "express-rate-limit";
+-
+ const globalLimiter = rateLimit({
+     windowMs: 15 * 60 * 1000, // 15 minutes
+-    limit: 100, // Limit each IP to 100 requests per `window` (here, per 15 minutes).
+-    standardHeaders: 'draft-7', // draft-6: `RateLimit-*` headers; draft-7: combined `RateLimit` header
++    max: 100, // Limit each IP to 100 requests per `window` (here, per 15 minutes).
++    standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+     legacyHeaders: false, // Disable the `X-RateLimit-*` headers.
+ });
+ 
+@@ -65,23 +64,22 @@ app.get("/", (req, res) => {
+     res.json({ message: "Jiu-Jitsu Platform API is running" });
+ });
+ 
+-app.get("/api/debug", async (req, res) => {
+-    if (process.env.NODE_ENV === "production") {
+-        return res.status(404).json({ message: "Not found" });
+-    }
+-    try {
+-        const tables = await import("./data-source").then(m => m.AppDataSource.query("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'"));
+-        const users = await import("./data-source").then(m => m.AppDataSource.query("SELECT count(*) FROM users"));
+-        res.json({
+-            message: "Database Debug",
+-            tables,
+-            userCount: users[0] || 0,
+-            env: process.env.NODE_ENV,
+-            entitiesLoaded: import("./data-source").then(m => m.AppDataSource.entityMetadatas.map(e => e.name))
+-        });
+-    } catch (error: any) {
+-        res.status(500).json({ error: error.message, stack: error.stack });
+-    }
+-});
++if (process.env.NODE_ENV !== "production") {
++    app.get("/api/debug", async (req, res) => {
++        try {
++            const tables = await import("./data-source").then(m => m.AppDataSource.query("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'"));
++            const users = await import("./data-source").then(m => m.AppDataSource.query("SELECT count(*) FROM users"));
++            res.json({
++                message: "Database Debug",
++                tables,
++                userCount: users[0] || 0,
++                env: process.env.NODE_ENV,
++                entitiesLoaded: import("./data-source").then(m => m.AppDataSource.entityMetadatas.map(e => e.name))
++            });
++        } catch (error: any) {
++            res.status(500).json({ error: error.message, stack: error.stack });
++        }
++    });
++}
+ 
+ export default app;
+diff --git a/jiu-api/src/controllers/AuthController.ts b/jiu-api/src/controllers/AuthController.ts
+index 7f6d85b..cee55bd 100644
+--- a/jiu-api/src/controllers/AuthController.ts
++++ b/jiu-api/src/controllers/AuthController.ts
+@@ -8,18 +8,7 @@ export class AuthController {
+             console.log("Registering user");
+             const result = await AuthService.register(req.body);
+ 
+-            res.cookie("accessToken", result.accessToken, {
+-                httpOnly: true,
+-                secure: process.env.NODE_ENV === "production",
+-                sameSite: "strict",
+-                maxAge: 15 * 60 * 1000 // 15m
+-            });
+-            res.cookie("refreshToken", result.refreshToken, {
+-                httpOnly: true,
+-                secure: process.env.NODE_ENV === "production",
+-                sameSite: "strict",
+-                maxAge: 7 * 24 * 60 * 60 * 1000 // 7d
+-            });
++            AuthController.setAuthCookies(res, result.accessToken, result.refreshToken);
+ 
+             res.status(201).json({ user: result.user });
+         } catch (error: any) {
+@@ -39,18 +28,7 @@ export class AuthController {
+         try {
+             const result = await AuthService.login(req.body);
+ 
+-            res.cookie("accessToken", result.accessToken, {
+-                httpOnly: true,
+-                secure: process.env.NODE_ENV === "production",
+-                sameSite: "strict",
+-                maxAge: 15 * 60 * 1000 // 15m
+-            });
+-            res.cookie("refreshToken", result.refreshToken, {
+-                httpOnly: true,
+-                secure: process.env.NODE_ENV === "production",
+-                sameSite: "strict",
+-                maxAge: 7 * 24 * 60 * 60 * 1000 // 7d
+-            });
++            AuthController.setAuthCookies(res, result.accessToken, result.refreshToken);
+ 
+             res.json({ user: result.user });
+         } catch (error: any) {
+@@ -61,26 +39,34 @@ export class AuthController {
+     static async refresh(req: Request, res: Response) {
+         try {
+             const refreshToken = req.cookies.refreshToken;
+-            if (!refreshToken) throw new Error("No refresh token provided");
++            if (!refreshToken) {
++                return res.status(401).json({ error: "No refresh token provided" });
++            }
+ 
+             const result = await AuthService.refreshToken(refreshToken);
+ 
+-            res.cookie("accessToken", result.accessToken, {
+-                httpOnly: true,
+-                secure: process.env.NODE_ENV === "production",
+-                sameSite: "strict",
+-                maxAge: 15 * 60 * 1000 // 15m
+-            });
+-            res.cookie("refreshToken", result.refreshToken, {
+-                httpOnly: true,
+-                secure: process.env.NODE_ENV === "production",
+-                sameSite: "strict",
+-                maxAge: 7 * 24 * 60 * 60 * 1000 // 7d
+-            });
++            AuthController.setAuthCookies(res, result.accessToken, result.refreshToken);
+ 
+             res.json({ user: result.user });
+         } catch (error: any) {
+             res.status(400).json({ error: error.message });
+         }
+     }
++
++
++    private static setAuthCookies(res: Response, accessToken: string, refreshToken: string) {
++        const isProd = process.env.NODE_ENV === "production";
++        res.cookie("accessToken", accessToken, {
++            httpOnly: true,
++            secure: isProd,
++            sameSite: "strict",
++            maxAge: 15 * 60 * 1000 // 15m
++        });
++        res.cookie("refreshToken", refreshToken, {
++            httpOnly: true,
++            secure: isProd,
++            sameSite: "strict",
++            maxAge: 7 * 24 * 60 * 60 * 1000 // 7d
++        });
++    }
+ }
+diff --git a/jiu-api/src/data-source.ts b/jiu-api/src/data-source.ts
+index 096d7aa..c979d70 100644
+--- a/jiu-api/src/data-source.ts
++++ b/jiu-api/src/data-source.ts
+@@ -12,8 +12,12 @@ import { RefreshToken } from "./entities/RefreshToken";
+ import { ScheduledLesson } from "./entities/ScheduledLesson";
+ import { StudentProgress } from "./entities/StudentProgress";
+ 
++import * as path from "path";
++
+ dotenv.config();
+ 
++const isProd = process.env.NODE_ENV === "production";
++
+ export const AppDataSource = new DataSource({
+     type: "postgres",
+     url: process.env.DATABASE_URL,
+@@ -22,7 +26,7 @@ export const AppDataSource = new DataSource({
+     username: process.env.DB_USER || "postgres",
+     password: process.env.DB_PASSWORD || "postgres",
+     database: process.env.DB_NAME || "jiujitsu",
+-    synchronize: process.env.NODE_ENV !== "production", // Should be false in production, but keeping true for auto-migration
++    synchronize: !isProd,
+     logging: false,
+     entities: [
+         User,
+@@ -36,7 +40,7 @@ export const AppDataSource = new DataSource({
+         ScheduledLesson,
+         StudentProgress
+     ],
+-    migrations: [__dirname + "/migrations/*{.ts,.js}"],
++    migrations: [path.join(__dirname, "migrations", "*.{ts,js}")],
+     subscribers: [],
+-    ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
++    ssl: isProd ? { rejectUnauthorized: false } : false,
+ });
+diff --git a/jiu-api/src/middlewares/auth.middleware.ts b/jiu-api/src/middlewares/auth.middleware.ts
+index 92c1780..408bdf3 100644
+--- a/jiu-api/src/middlewares/auth.middleware.ts
++++ b/jiu-api/src/middlewares/auth.middleware.ts
+@@ -1,12 +1,20 @@
+ import { Request, Response, NextFunction } from "express";
+ import * as jwt from "jsonwebtoken";
+ 
++import { authConfig } from "../config/auth.config";
++
++export interface AuthRequest extends Request {
++    user?: jwt.JwtPayload | string;
++}
++
+ export const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
+     let token = req.cookies.accessToken;
+ 
+     if (!token && req.headers.authorization) {
+         const parts = req.headers.authorization.split(" ");
+-        if (parts.length === 2) token = parts[1];
++        if (parts.length === 2 && parts[0].toLowerCase() === "bearer") {
++            token = parts[1];
++        }
+     }
+ 
+     if (!token) {
+@@ -14,18 +22,21 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction)
+         return;
+     }
+ 
+-    // const [, token] = authHeader.split(" "); 
+-    // ^ removed this line as token is now resolved above
+-
+     try {
+-        if (!process.env.JWT_SECRET) {
+-            throw new Error("JWT_SECRET is not defined");
+-        }
+-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+-        (req as any).user = decoded; // TODO: Fix type definition
++        const decoded = jwt.verify(token, authConfig.getJwtSecret());
++        (req as AuthRequest).user = decoded;
+         next();
+-    } catch (err) {
+-        res.status(401).json({ error: "Invalid token" });
++    } catch (err: any) {
++        if (err.name === "TokenExpiredError") {
++            res.status(401).json({ error: "Token expired" });
++            return;
++        }
++        if (err.name === "JsonWebTokenError") {
++            res.status(401).json({ error: "Invalid token" });
++            return;
++        }
++        console.error("Auth middleware error:", err);
++        res.status(500).json({ error: "Authentication failed" });
+         return;
+     }
+ };
+diff --git a/jiu-api/src/routes/auth.routes.ts b/jiu-api/src/routes/auth.routes.ts
+index 44d6ff8..d1fb477 100644
+--- a/jiu-api/src/routes/auth.routes.ts
++++ b/jiu-api/src/routes/auth.routes.ts
+@@ -4,16 +4,24 @@ import { rateLimit } from "express-rate-limit";
+ 
+ const router = Router();
+ 
+-const authLimiter = rateLimit({
++const loginLimiter = rateLimit({
+     windowMs: 15 * 60 * 1000, // 15 minutes
+-    limit: 5, // Limit each IP to 5 requests per `window` (here, per 15 minutes).
+-    standardHeaders: 'draft-7',
++    max: 5, // Limit each IP to 5 requests per `window` (here, per 15 minutes).
++    standardHeaders: true,
+     legacyHeaders: false,
+-    message: "Too many login attempts, please try again after 15 minutes"
++    message: { error: "Too many login attempts, please try again after 15 minutes" }
+ });
+ 
+-router.post("/register", authLimiter, AuthController.register);
+-router.post("/login", authLimiter, AuthController.login);
++const registerLimiter = rateLimit({
++    windowMs: 60 * 60 * 1000, // 1 hour
++    max: 10,
++    standardHeaders: true,
++    legacyHeaders: false,
++    message: { error: "Too many accounts created from this IP, please try again after an hour" }
++});
++
++router.post("/register", registerLimiter, AuthController.register);
++router.post("/login", loginLimiter, AuthController.login);
+ router.post("/refresh", AuthController.refresh);
+ 
+ export default router;
+diff --git a/jiu-api/src/services/AuthService.ts b/jiu-api/src/services/AuthService.ts
+index 0e5c95e..7171032 100644
+--- a/jiu-api/src/services/AuthService.ts
++++ b/jiu-api/src/services/AuthService.ts
+@@ -4,6 +4,7 @@ import { RefreshToken } from "../entities/RefreshToken";
+ import * as bcrypt from "bcrypt";
+ import * as jwt from "jsonwebtoken";
+ import { z } from "zod";
++import { authConfig } from "../config/auth.config";
+ 
+ const userRepository = AppDataSource.getRepository(User);
+ const refreshTokenRepository = AppDataSource.getRepository(RefreshToken);
+@@ -62,8 +63,7 @@ export class AuthService {
+ 
+         // 2. Verify jwt
+         try {
+-            if (!process.env.JWT_SECRET) throw new Error("JWT_SECRET is not defined");
+-            jwt.verify(token, process.env.JWT_SECRET);
++            jwt.verify(token, authConfig.getJwtSecret());
+         } catch (err) {
+             throw new Error("Invalid refresh token");
+         }
+@@ -81,27 +81,25 @@ export class AuthService {
+     }
+ 
+     private static async generateTokens(user: User) {
+-        if (!process.env.JWT_SECRET) {
+-            throw new Error("JWT_SECRET is not defined");
+-        }
++        const secret = authConfig.getJwtSecret();
+ 
+         const accessToken = jwt.sign(
+             { userId: user.id, email: user.email, role: user.role },
+-            process.env.JWT_SECRET,
+-            { expiresIn: (process.env.JWT_EXPIRES_IN || "15m") as any }
++            secret,
++            { expiresIn: authConfig.jwtExpiresIn as any }
+         );
+ 
+         const refreshToken = jwt.sign(
+             { userId: user.id },
+-            process.env.JWT_SECRET,
+-            { expiresIn: (process.env.REFRESH_TOKEN_EXPIRES_IN || "7d") as any }
++            secret,
++            { expiresIn: authConfig.refreshTokenExpiresIn as any }
+         );
+ 
+         // Save refresh token
+         const tokenEntity = refreshTokenRepository.create({
+             user,
+             token: refreshToken,
+-            expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
++            expiresAt: authConfig.refreshTokenExpiresDate()
+         });
+         await refreshTokenRepository.save(tokenEntity);
+ 
+diff --git a/jiu-app/README.md b/jiu-app/README.md
+index 7c38da8..b98f7b5 100644
+--- a/jiu-app/README.md
++++ b/jiu-app/README.md
+@@ -58,6 +58,7 @@ Em vez disso, utiliza **Cookies HttpOnly** definidos pelo backend.
+ - O cliente HTTP (`axios` em `src/lib/api.ts`) est├í configurado com `withCredentials: true`.
+ - O navegador envia/recebe os cookies automaticamente em cada requisi├º├úo para a API.
+ - Em caso de erro 401 (N├úo autorizado), a aplica├º├úo redireciona para o login.
++- O **Logout** realiza a limpeza de seguran├ºa (tokens legados) e invalida a sess├úo no servidor.
+ 
+ ## ­ƒùé´©Å Estrutura de Pastas
+ 
+diff --git a/jiu-app/src/pages/professor/ProfessorHome.tsx b/jiu-app/src/pages/professor/ProfessorHome.tsx
+index 2dcc576..5ef50a1 100644
+--- a/jiu-app/src/pages/professor/ProfessorHome.tsx
++++ b/jiu-app/src/pages/professor/ProfessorHome.tsx
+@@ -4,7 +4,7 @@ import { Button } from '../../components/ui/Button';
+ import { Users } from 'lucide-react';
+ import { useAuthStore } from '../../stores/useAuthStore';
+ import { DashboardService } from '../../services/dashboard.service';
+-import { format, parseISO, addMinutes } from 'date-fns';
++import { format, parseISO } from 'date-fns';
+ 
+ export const ProfessorHome = () => {
+     const { user } = useAuthStore();
+@@ -56,7 +56,7 @@ export const ProfessorHome = () => {
+                                                 <h4 className="font-semibold text-lg">{lesson.class?.name}</h4>
+                                                 <div className="flex items-center text-sm text-neutral-500 gap-2">
+                                                     <Users className="h-4 w-4" />
+-                                                    <span>{format(addMinutes(parseISO(lesson.date), new Date().getTimezoneOffset()), 'dd/MM/yyyy')}</span>
++                                                    <span>{lesson.date ? format(parseISO(lesson.date), 'dd/MM/yyyy') : 'ÔÇö'}</span>
+                                                 </div>
+                                             </div>
+                                         </div>
+diff --git a/jiu-app/src/stores/useAuthStore.ts b/jiu-app/src/stores/useAuthStore.ts
+index 44289aa..a0688d5 100644
+--- a/jiu-app/src/stores/useAuthStore.ts
++++ b/jiu-app/src/stores/useAuthStore.ts
+@@ -17,6 +17,8 @@ export const useAuthStore = create<AuthState>((set) => ({
+     },
+ 
+     logout: () => {
++        localStorage.removeItem('accessToken');
++        localStorage.removeItem('refreshToken');
+         set({ user: null, isAuthenticated: false });
+         AuthService.logout().catch(console.error);
+     },
+@@ -31,7 +33,7 @@ export const useAuthStore = create<AuthState>((set) => ({
+             const user = await AuthService.getMe();
+             set({ user, isAuthenticated: true });
+         } catch (error) {
+-            // console.error("Auth check failed", error);
++            console.debug("Auth check failed", error);
+             set({ user: null, isAuthenticated: false });
+         }
+     }

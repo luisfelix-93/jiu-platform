@@ -1,8 +1,30 @@
-# Resumo dos Últimos 4 Commits
+# Resumo dos Últimos 5 Commits
 
-Este documento apresenta um resumo detalhado das alterações realizadas nos últimos 4 commits do projeto `jiu-platform`.
+Este documento apresenta um resumo detalhado das alterações realizadas nos últimos 5 commits do projeto `jiu-platform`.
 
-## 1. Commit: `0b15157` - GitHub Actions e Atualização de Documentação
+## 1. Commit: `05eb136` - Correções Code Review
+**Data:** 06/01/2026 21:01
+**Autor:** luisfelix-93
+
+### Resumo
+Refinamentos pós-code review focados em segurança, limpeza de código e configuração de ambiente.
+
+### Alterações Detalhadas
+*   **Segurança e Auth**:
+    *   **Rate Limiting Refinado**: Separação de limitadores para Login (5 tent/15m) e Registro (10 contas/1h).
+    *   **Cookies**: Centralização da lógica de cookies em `setAuthCookies`.
+    *   **Cleanup**: Logout agora força a limpeza de tokens legados do `localStorage`.
+    *   **Middleware**: Melhor tratamento de erros de JWT (Expirado vs Inválido).
+*   **Configuração**:
+    *   **Frontend URL**: Suporte a múltiplos domínios CORS (localhost + Vercel).
+    *   **TypeORM**: Migrations path corrigido com `path.join` e sync desativado em produção.
+    *   **Env Vars**: Documentadas novas variáveis de expiração de token em `doc/DEPLOY.md`.
+*   **Fixes**:
+    *   **Datas**: Remoção de hacks de timezone em `ProfessorHome`.
+
+---
+
+## 2. Commit: `0b15157` - GitHub Actions e Atualização de Documentitação
 **Data:** 06/01/2026 14:24
 **Autor:** luisfelix-93
 
@@ -22,7 +44,7 @@ Este commit introduz automação via GitHub Actions para abertura de Pull Reques
 
 ---
 
-## 2. Commit: `2362c2373` - Rate Limiting e Correção de Datas
+## 3. Commit: `2362c2373` - Rate Limiting e Correção de Datas
 **Data:** 06/01/2026 14:05
 **Autor:** luisfelix-93
 
@@ -42,7 +64,7 @@ Este commit implementa mecanismos de proteção contra abuso (Rate Limiting) na 
 
 ---
 
-## 3. Commit: `6b49804d7` - Atualização de Cookies (Migração para HttpOnly)
+## 4. Commit: `6b49804d7` - Atualização de Cookies (Migração para HttpOnly)
 **Data:** 06/01/2026 13:55
 **Autor:** luisfelix-93
 
@@ -72,7 +94,7 @@ Este commit realiza uma mudança estrutural importante na autenticação, migran
 
 ---
 
-## 4. Commit: `06439d31c` - Atualizações de Segurança e Configuração
+## 5. Commit: `06439d31c` - Atualizações de Segurança e Configuração
 **Data:** 06/01/2026 13:31
 **Autor:** luisfelix-93
 
