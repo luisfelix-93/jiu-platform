@@ -4,7 +4,9 @@ import { LessonService } from "../services/LessonService";
 export class LessonController {
     static async create(req: Request, res: Response) {
         try {
-            const result = await LessonService.createLesson(req.body);
+            const userId = (req as any).user.userId;
+            const lessonData = { ...req.body, professorId: userId };
+            const result = await LessonService.createLesson(lessonData);
             res.status(201).json(result);
         } catch (error: any) {
             res.status(400).json({ error: error.message });
