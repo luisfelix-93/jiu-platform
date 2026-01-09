@@ -58,20 +58,24 @@ export class AttendanceService {
     }
 
     private static async sendAttendanceEmails(student: User, lesson: ScheduledLesson) {
+        const promises: Promise<any>[] = [];
+
         // Email to Student
-        await EmailService.sendMail(
-            student.email,
-            "Presença Confirmada - Jiu Platform",
-            `
-            <h1>Presença Confirmada!</h1>
-            <p>Olá ${student.name},</p>
-            <p>Sua presença foi confirmada para a aula <strong>${lesson.class.name}</strong> agendada para <strong>${lesson.date}</strong> às <strong>${lesson.startTime}</strong>.</p>
-            `
-        );
+        if (student.email) {
+            promises.push(EmailService.sendMail(
+                student.email,
+                "Presença Confirmada - Jiu Platform",
+                `
+                <h1>Presença Confirmada!</h1>
+                <p>Olá ${student.name},</p>
+                <p>Sua presença foi confirmada para a aula <strong>${lesson.class.name}</strong> agendada para <strong>${lesson.date}</strong> às <strong>${lesson.startTime}</strong>.</p>
+                `
+            ));
+        }
 
         // Email to Professor
         if (lesson.professor && lesson.professor.email) {
-            await EmailService.sendMail(
+            promises.push(EmailService.sendMail(
                 lesson.professor.email,
                 "Presença do Aluno Confirmada - Jiu Platform",
                 `
@@ -79,7 +83,11 @@ export class AttendanceService {
                 <p>Olá Professor ${lesson.professor.name},</p>
                 <p><strong>${student.name}</strong> marcou presença na sua aula<strong>${lesson.class.name}</strong> agendada para <strong>${lesson.date}</strong> às <strong>${lesson.startTime}</strong>.</p>
                 `
-            );
+            ));
+        }
+
+        if (promises.length > 0) {
+            await Promise.all(promises);
         }
     }
 
