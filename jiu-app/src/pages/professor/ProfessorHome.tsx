@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Users } from 'lucide-react';
@@ -8,6 +9,7 @@ import { format, parseISO } from 'date-fns';
 
 export const ProfessorHome = () => {
     const { user } = useAuthStore();
+    const navigate = useNavigate();
     const [data, setData] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -61,8 +63,8 @@ export const ProfessorHome = () => {
                                             </div>
                                         </div>
                                         <div className="flex gap-2">
-                                            <Button size="sm" variant="outline">Ver Detalhes</Button>
-                                            <Button size="sm">Iniciar Chamada</Button>
+                                            <Button size="sm" variant="outline" onClick={() => navigate('/professor/aulas')}>Ver Detalhes</Button>
+                                            <Button size="sm" onClick={() => navigate(`/professor/presenca?lessonId=${lesson.id}`)}>Iniciar Chamada</Button>
                                         </div>
                                     </div>
                                 ))

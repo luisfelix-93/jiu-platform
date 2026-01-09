@@ -18,3 +18,12 @@
     - Disparo automático de email de confirmação após o registro de presença com sucesso.
 - **`src/controllers/AttendanceController.ts`**:
     - Ajustes para suportar o fluxo de notificação assíncrona (se aplicável), garantindo que a resposta ao cliente não seja bloqueada pelo envio do email.
+
+### 20260108: Correção de Code Review
+- **`jiu-api/src/controllers/LessonController.ts`**:
+    - **Validação com Zod**: Implementação de schema rigoroso para criação de aulas, validando campos obrigatórios (`topic`, `description`, `classId`, `date`, `startTime`, `endTime`) e formatos.
+    - **Segurança**: Reforço na verificação de usuário autenticado (`request.user`) antes de processar a criação.
+    - **Tratamento de Erros**: Adição de handler específico para erro de conflito (409) do Postgres (código `23505`), retornando mensagem amigável quando já existe aula no horário.
+- **`jiu-api/src/services/AttendanceService.ts`**:
+    - **Performance**: Otimização do envio de emails utilizando `Promise.all` para disparar notificações ao aluno e professor em paralelo.
+    - **Robustez**: Adicionada verificação de existência de email antes de tentar o envio, prevenindo erros desnecessários.
