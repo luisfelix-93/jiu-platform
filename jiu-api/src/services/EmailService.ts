@@ -20,8 +20,9 @@ export class EmailService {
     }
 
     private static isValidEmail(email: string): boolean {
-        // Basic email format validation
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        // More comprehensive email validation regex
+        // Based on RFC 5322 Official Standard
+        const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
         return emailRegex.test(email);
     }
 
