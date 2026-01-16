@@ -12,7 +12,7 @@ Derived from `doc/security_specs.md`.
     - Implement `express-rate-limit` to prevent brute-force and DDoS attacks.
     - Focus on `/api/auth/*` routes.
 
-- [ ] **Security Headers (Backend)**
+- [x] **Security Headers (Backend)**
     - Audit `helmet` configuration.
     - Configure `Content-Security-Policy` (CSP) appropriately.
 

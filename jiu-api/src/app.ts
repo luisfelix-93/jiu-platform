@@ -31,7 +31,18 @@ app.use(cors({
     credentials: true,
 }));
 app.use(cookieParser());
-app.use(helmet());
+const isProd = process.env.NODE_ENV === "production";
+app.use(helmet({
+    contentSecurityPolicy: false, // API não serve HTML, CSP não necessário
+    referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+    xPermittedCrossDomainPolicies: { permittedPolicies: 'none' },
+    strictTransportSecurity: isProd ? {
+        maxAge: 31536000,
+        includeSubDomains: true,
+        preload: true
+    } : false,
+    xFrameOptions: { action: 'deny' }
+}));
 
 const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
