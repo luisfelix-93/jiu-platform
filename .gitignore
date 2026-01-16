@@ -48,3 +48,6 @@ logs/
 
 # Documentation
 doc/security_specs.md
+
+#Scripts
+jiu-api/src/scripts 

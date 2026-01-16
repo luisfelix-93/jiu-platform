@@ -8,7 +8,7 @@ import { Input } from '../../components/ui/Input';
 import { LessonService, type Lesson } from '../../services/lesson.service';
 import { ClassService, type Class } from '../../services/class.service';
 import { Calendar, Clock, Plus, Trash2, Edit2, X } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, addMinutes, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 interface CreateLessonSchema {
@@ -217,7 +217,7 @@ export const ProfessorLessons = () => {
                                 <div className="flex items-center gap-4 text-sm text-neutral-600">
                                     <span className="flex items-center gap-1">
                                         <Calendar size={14} />
-                                        {format(new Date(lesson.date), "dd/MM/yyyy", { locale: ptBR })}
+                                        {format(addMinutes(parseISO(lesson.date), new Date().getTimezoneOffset()), "dd/MM/yyyy", { locale: ptBR })}
                                     </span>
                                     <span className="flex items-center gap-1">
                                         <Clock size={14} />

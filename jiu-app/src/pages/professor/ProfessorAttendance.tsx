@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { LessonService, type Lesson } from '../../services/lesson.service';
 import { AttendanceService } from '../../services/attendance.service';
 import { Check, X, Clock, Calendar } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, addMinutes, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 export const ProfessorAttendance = () => {
@@ -12,6 +13,9 @@ export const ProfessorAttendance = () => {
     const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
     const [attendanceList, setAttendanceList] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+
+    const [searchParams] = useSearchParams();
+    const lessonIdParam = searchParams.get('lessonId');
 
     // Fetch lessons for today or upcoming (simplification: listing recent/upcoming)
     useEffect(() => {
@@ -29,6 +33,16 @@ export const ProfessorAttendance = () => {
         };
         fetchLessons();
     }, []);
+
+    // Auto-select lesson from URL param
+    useEffect(() => {
+        if (lessons.length > 0 && lessonIdParam && !selectedLesson) {
+            const preselected = lessons.find(l => l.id === lessonIdParam);
+            if (preselected) {
+                handleLessonSelect(preselected);
+            }
+        }
+    }, [lessons, lessonIdParam]);
 
     const fetchAttendance = async (lessonId: string) => {
         try {
@@ -90,7 +104,7 @@ export const ProfessorAttendance = () => {
                                     </div>
                                     <div className="text-sm text-neutral-500 flex items-center gap-2">
                                         <Calendar className="h-3 w-3" />
-                                        {format(new Date(lesson.date), "dd/MM/yyyy", { locale: ptBR })}
+                                        {format(addMinutes(parseISO(lesson.date), new Date().getTimezoneOffset()), "dd/MM/yyyy", { locale: ptBR })}
                                     </div>
                                     <div className="text-sm text-neutral-500 flex items-center gap-2 mt-1">
                                         <Clock className="h-3 w-3" />
@@ -110,7 +124,7 @@ export const ProfessorAttendance = () => {
                                 <CardTitle className="flex justify-between items-center">
                                     <span>Lista de Presença</span>
                                     <span className="text-sm font-normal text-neutral-500">
-                                        {format(new Date(selectedLesson.date), "dd 'de' MMMM", { locale: ptBR })}
+                                        {format(addMinutes(parseISO(selectedLesson.date), new Date().getTimezoneOffset()), "dd 'de' MMMM", { locale: ptBR })}
                                     </span>
                                 </CardTitle>
                             </CardHeader>

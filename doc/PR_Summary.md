@@ -1,116 +1,106 @@
-# Resumo dos Últimos 5 Commits
+# PR: Sistema de Notificações por Email e Melhorias de Validação
 
-Este documento apresenta um resumo detalhado das alterações realizadas nos últimos 5 commits do projeto `jiu-platform`.
+## Visão Geral
+Esta pull request introduz um sistema completo de notificações por email na plataforma Jiu Platform. Quando um aluno marca presença em uma aula (`status = 'present'`), emails de confirmação são enviados automaticamente ao aluno e ao professor. Além disso, foram implementadas melhorias de validação no controlador de aulas e correções de fuso horário no frontend.
 
-## 1. Commit: `05eb136` - Correções Code Review
-**Data:** 06/01/2026 21:01
-**Autor:** luisfelix-93
+A branch `feature/notificacao` está **6 commits à frente** da `main`. As mudanças incluem **12 arquivos modificados**, com **247 inserções e 604 deleções** (a maioria proveniente da remoção de arquivos temporários e da reescrita da documentação).
 
-### Resumo
-Refinamentos pós-code review focados em segurança, limpeza de código e configuração de ambiente.
+## Commits Incluídos
 
-### Alterações Detalhadas
-*   **Segurança e Auth**:
-    *   **Rate Limiting Refinado**: Separação de limitadores para Login (5 tent/15m) e Registro (10 contas/1h).
-    *   **Cookies**: Centralização da lógica de cookies em `setAuthCookies`.
-    *   **Cleanup**: Logout agora força a limpeza de tokens legados do `localStorage`.
-    *   **Middleware**: Melhor tratamento de erros de JWT (Expirado vs Inválido).
-*   **Configuração**:
-    *   **Frontend URL**: Suporte a múltiplos domínios CORS (localhost + Vercel).
-    *   **TypeORM**: Migrations path corrigido com `path.join` e sync desativado em produção.
-    *   **Env Vars**: Documentadas novas variáveis de expiração de token em `doc/DEPLOY.md`.
-*   **Fixes**:
-    *   **Datas**: Remoção de hacks de timezone em `ProfessorHome`.
+### 20260107: Lógica de envio de email
+- **Criação do serviço de email**: Implementação da classe `EmailService` utilizando `nodemailer`.
+- **Configuração centralizada**: Criação de `email.config.ts` com validação Zod para variáveis de ambiente SMTP.
+- **Dependências**: Adição de `nodemailer` e `@types/nodemailer` ao `package.json`.
 
----
+### 20260107: Notificações em presença  
+- **Integração no serviço de presença**: Modificação de `AttendanceService.registerAttendance` para disparar emails quando a presença é confirmada.
+- **Fluxo assíncrono**: O envio de emails ocorre em background, sem bloquear a resposta à requisição do cliente.
+- **Templates HTML simples**: Mensagens personalizadas para aluno e professor com detalhes da aula.
 
-## 2. Commit: `0b15157` - GitHub Actions e Atualização de Documentitação
-**Data:** 06/01/2026 14:24
-**Autor:** luisfelix-93
+### 20260107: Documentação
+- **Atualização do README da API**: Adição da seção de configuração de email com variáveis de ambiente de exemplo.
+- **.gitignore**: Exclusão da pasta `jiu-api/src/scripts`.
 
-### Resumo
-Este commit introduz automação via GitHub Actions para abertura de Pull Requests e atualiza significativamente a documentação do projeto (Backend, Frontend e Root).
+### 20260107: Documentação (continuação)
+- **Reestruturação do PR_Summary.md**: O arquivo foi reescrito para refletir os commits recentes.
 
-### Alterações Detalhadas
-*   **CI/CD (`.github/workflows/auto_pr.yml`)**:
-    *   Criação de um workflow de **Auto PR** que dispara ao realizar push nas branches `feature/*` ou `fix/*`.
-    *   Este action automatiza a criação de Pull Requests para a branch `main`.
-*   **Documentação**:
-    *   **Frontend (`jiu-app/README.md`)**: Reescrevida completamente a documentação, substituindo o template padrão do Vite por instruções específicas do projeto, cobrindo funcionalidades, fluxo de autenticação e instalação.
-    *   **Backend (`jiu-api/README.md`)**: Adicionadas informações críticas sobre variáveis de ambiente (`JWT_SECRET`, `FRONTEND_URL`), scripts de migração do TypeORM e detalhes de segurança (Rate Limiting).
-    *   **Root (`README.md`)**: Atualizada a seção de tecnologias e scripts disponíveis para refletir o estado atual do projeto.
-*   **Meta**:
-    *   Criação do próprio arquivo `doc/PR_Summary.md` para rastreamento de alterações.
+### 20260108: Correção de Code Review
+- **Validação robusta no LessonController**: Implementação de schema Zod para validar todos os campos da criação de aula (`classId` como UUID, campos obrigatórios).
+- **Verificação de autenticação**: Garantia de que o `userId` do professor vem do token JWT.
+- **Tratamento de erros específico**: Captura do erro PostgreSQL `23505` (violação de unicidade) com retorno de status 409 e mensagem amigável.
+- **Otimização do envio de emails**: Uso de `Promise.all` para enviar notificações ao aluno e professor em paralelo.
+- **Verificação de segurança**: Confirmação de existência de email antes do envio.
 
----
+### 20260109: Correções no frontend
+- **Suporte a parâmetro de URL**: A página `ProfessorAttendance` agora aceita `?lessonId=...` para seleção automática da aula.
+- **Correção de fuso horário**: Uso de `addMinutes(parseISO(date), timezoneOffset)` para exibir datas corretamente no navegador.
+- **Remoção de arquivo temporário**: Deleção de `temp_commit_log.txt`.
 
-## 3. Commit: `2362c2373` - Rate Limiting e Correção de Datas
-**Data:** 06/01/2026 14:05
-**Autor:** luisfelix-93
+## Arquivos Modificados
 
-### Resumo
-Este commit implementa mecanismos de proteção contra abuso (Rate Limiting) na API e corrige um problema de exibição de datas no frontend.
+| Caminho | Alterações Realizadas | Impacto |
+|---------|----------------------|---------|
+| `jiu-api/src/config/email.config.ts` (novo) | Configuração SMTP com validação Zod via variáveis de ambiente. | Centraliza e valida as credenciais de email. |
+| `jiu-api/src/services/EmailService.ts` (novo) | Serviço singleton que encapsula `nodemailer.createTransport`. | Reutilização da conexão SMTP e envio genérico de emails. |
+| `jiu-api/src/services/AttendanceService.ts` | Integração com `EmailService`, disparo assíncrono de emails, uso de `Promise.all`. | Notificações automáticas ao aluno/professor quando presença é confirmada. |
+| `jiu-api/src/controllers/LessonController.ts` | Validação Zod, verificação de autenticação, tratamento de erro 23505. | Maior segurança e experiência de usuário (mensagens claras em caso de conflito). |
+| `jiu-api/package.json` | Adição de `nodemailer` e `@types/nodemailer`. | Dependências necessárias para o sistema de email. |
+| `jiu-api/README.md` | Seção de configuração de email e descrição da funcionalidade de notificações. | Documentação para desenvolvedores. |
+| `jiu-app/src/pages/professor/ProfessorAttendance.tsx` | Suporte a `useSearchParams`, correção de timezone com `addMinutes`/`parseISO`. | UX melhorada (seleção por URL) e exibição correta de datas. |
+| `jiu-app/src/pages/professor/ProfessorHome.tsx` | Ajustes menores de timezone. | Consistência na exibição de datas. |
+| `jiu-app/src/pages/professor/ProfessorLessons.tsx` | Ajustes menores de timezone. | Consistência na exibição de datas. |
+| `.gitignore` | Adição de `jiu-api/src/scripts`. | Evita commit de scripts internos. |
+| `doc/PR_Summary.md` | Reescrita completa para servir como corpo deste PR. | Documentação técnica das mudanças. |
+| `temp_commit_log.txt` (removido) | Arquivo temporário deletado. | Limpeza do repositório. |
 
-### Alterações Detalhadas
-*   **Backend (`jiu-api`)**:
-    *   **Dependências**: Adição do pacote `express-rate-limit` e seus tipos.
-    *   **Rate Limiting Global (`app.ts`)**: Configurado um limitador global que permite até **100 requisições por 15 minutos** por IP.
-    *   **Rate Limiting de Autenticação (`auth.routes.ts`)**: Configurado um limitador mais estrito para rotas de autenticação (`/login`, `/register`), permitindo apenas **5 tentativas por 15 minutos** para prevenir força bruta.
-*   **Frontend (`jiu-app`)**:
-    *   **Correção de Fuso Horário (`ProfessorHome.tsx`)**: Ajuste na exibição da data das aulas. Foi introduzida a função `addMinutes` com o offset do timezone local para corrigir problemas onde a data aparecia como dia anterior (D-1) devido a conversões de UTC.
-*   **Documentação (`TODO.md`)**:
-    *   Marcada como concluída a tarefa de "Rate Limiting (Backend)".
-    *   Marcada como concluída a tarefa de "Secure Token Storage (Frontend)" (provavelmente concluída no commit anterior, mas marcada neste).
+## Dependências Adicionadas
+- `nodemailer` ^7.0.12
+- `@types/nodemailer` ^7.0.4
 
----
+## Configuração Necessária
+Para que o sistema de email funcione, as seguintes variáveis de ambiente devem ser definidas no backend:
 
-## 4. Commit: `6b49804d7` - Atualização de Cookies (Migração para HttpOnly)
-**Data:** 06/01/2026 13:55
-**Autor:** luisfelix-93
+```env
+SMTP_HOST=smtp.mailtrap.io          # Host do servidor SMTP
+SMTP_PORT=2525                      # Porta (ex: 587 para TLS, 465 para SSL)
+SMTP_USER=seu_usuario               # Usuário SMTP (opcional dependendo do relay)
+SMTP_PASS=sua_senha                 # Senha SMTP (opcional)
+SMTP_FROM=nao-responda@jiujitsu.com # Email remetente (obrigatório, válido)
+SMTP_SECURE=false                   # true para SSL, false para TLS/STARTTLS
+```
 
-### Resumo
-Este commit realiza uma mudança estrutural importante na autenticação, migrando do armazenamento de tokens em `localStorage` para Cookies `HttpOnly` seguros.
+O sistema falha rapidamente (`process.exit(1)`) se alguma variável obrigatória estiver ausente ou inválida.
 
-### Alterações Detalhadas
-*   **Backend (`jiu-api`)**:
-    *   **Dependências**: Adição do `cookie-parser`.
-    *   **Configuração (`app.ts`)**: Middleware `cookie-parser` ativado para ler cookies das requisições.
-    *   **AuthController**:
-        *   Os métodos `register`, `login` e `refresh` foram alterados para enviar os tokens `accessToken` (15 min) e `refreshToken` (7 dias) através de **Cookies** em vez do corpo da resposta JSON.
-        *   Configuração dos Cookies: `httpOnly: true`, `sameSite: 'strict'`, e `secure: true` (em produção).
-    *   **AuthService**: Adicionadas verificações estritas para garantir que `JWT_SECRET` esteja definido.
-    *   **Middleware de Auth**: Alterado para buscar o token de acesso primeiramente nos cookies (`req.cookies.accessToken`). Mantém fallback para header Authorization mas o fluxo principal agora é via cookie.
-*   **Frontend (`jiu-app`)**:
-    *   **Cliente API (`api.ts`)**:
-        *   Adicionado `withCredentials: true` para garantir o envio de cookies em requisições CORS.
-        *   Removido o interceptor que injetava manualmente o token do `localStorage`.
-        *   Simplificado o tratamento de erro 401 (a lógica de refresh complexa no frontend foi reduzida, pois o browser gerencia os cookies automaticamente).
-    *   **Store de Auth (`useAuthStore.ts`)**:
-        *   Removida a lógica de salvar/ler tokens do `localStorage`.
-        *   Login e Logout agora dependem apenas da resposta da API (que define/limpa cookies) e do estado em memória.
-        *   `checkAuth` agora tenta refazer o fetch do perfil (`getMe`), confiando que o cookie de sessão será enviado automaticamente.
-*   **Documentação (`TODO.md`)**:
-    *   Criação/Atualização do arquivo com lista de melhorias de segurança baseadas em specs.
+## Impacto no Sistema
 
----
+### Para Usuários
+- **Alunos**: Recebem email de confirmação quando sua presença é marcada como "presente".
+- **Professores**: Recebem notificação por email quando um aluno confirma presença em sua aula.
+- **Experiência unificada**: As datas são exibidas corretamente, independente do fuso horário do navegador.
 
-## 5. Commit: `06439d31c` - Atualizações de Segurança e Configuração
-**Data:** 06/01/2026 13:31
-**Autor:** luisfelix-93
+### Para Desenvolvedores
+- **Validação robusta**: O `LessonController` agora valida entrada com Zod, retornando erros detalhados (400) em caso de dados inválidos.
+- **Segurança reforçada**: A criação de aula exige autenticação (o `professorId` é extraído do token JWT).
+- **Tratamento de erros aprimorado**: Conflitos de horário (aula duplicada) retornam status 409 com mensagem clara.
+- **Manutenção simplificada**: Configuração de email centralizada e validada.
 
-### Resumo
-Focado em melhorias gerais de segurança, configuração de CORS, scripts de banco de dados e limpeza de logs.
+### Para a Infraestrutura
+- **Conexão SMTP reutilizável**: O `EmailService` mantém uma única instância do transporter.
+- **Envios assíncronos**: O fluxo principal da API não é bloqueado pelo envio de emails.
+- **Fallback em texto plano**: Emails incluem versão `text` além do `html` para clientes que não suportam HTML.
 
-### Alterações Detalhadas
-*   **Segurança e CORS (`app.ts`)**:
-    *   Configuração dinâmica do **CORS** para aceitar origens do ambiente de desenvolvimento (`localhost:5173`) e produção (`process.env.FRONTEND_URL`).
-    *   Bloqueio da rota de debug `/api/debug` em ambiente de produção.
-*   **Banco de Dados (`data-source.ts`, `package.json`)**:
-    *   Adicionados scripts npm para gerenciamento de migrações TypeORM (`migration:generate`, `migration:run`, `migration:revert`).
-    *   Ajuste na configuração do TypeORM para carregar migrações e desativar `synchronize` em produção (embora ainda true em dev).
-    *   Criada a migração inicial `InitialSchema`.
-*   **Limpeza e Logs**:
-    *   Removido log que expunha o corpo da requisição (incluindo senhas) no `AuthController.ts`.
-    *   Atualizado `.gitignore` para ignorar pastas de logs e documentação específica.
-*   **AuthService**:
-    *   Refatoração para garantir que `JWT_SECRET` esteja presente antes de verificar/assinar tokens.
+## Testes Realizados
+- **Configuração de ambiente**: Validação Zod rejeita corretamente variáveis ausentes ou malformadas.
+- **Envio de email**: Testes manuais com serviço SMTP (Mailtrap) confirmam entrega.
+- **Integração de presença**: Registro de presença dispara emails para aluno e professor (quando ambos têm email cadastrado).
+- **Validação de aula**: Tentativa de criar aula com dados inválidos retorna erro 400; conflito de horário retorna 409.
+- **Correção de timezone**: Datas exibidas no frontend correspondem ao fuso horário local do usuário.
+- **Parâmetro de URL**: Acesso a `ProfessorAttendance?lessonId=...` seleciona automaticamente a aula correspondente.
+
+## Próximos Passos Sugeridos
+1. **Template engine**: Substituir strings HTML embutidas por templates (ex: Handlebars, EJS) para facilitar customização.
+2. **Fila de emails**: Implementar sistema de fila (Bull, RabbitMQ) para garantir entrega em caso de falha temporária do SMTP.
+3. **Logs de notificação**: Armazenar no banco de dados histórico de emails enviados (para auditoria).
+4. **Configuração por professor**: Permitir que professores desativem notificações por email.
+5. **Testes automatizados**: Adicionar testes unitários para `EmailService` e `AttendanceService`.
+6. **Webhooks**: Estender o sistema para enviar notificações via WhatsApp ou SMS (integração com serviços como Twilio).

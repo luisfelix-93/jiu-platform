@@ -1,13 +1,61 @@
 import { Request, Response } from "express";
 import { LessonService } from "../services/LessonService";
+import { z } from "zod";
+
+interface AuthenticatedRequest extends Request {
+    user?: {
+        userId: string;
+    };
+}
 
 export class LessonController {
     static async create(req: Request, res: Response) {
         try {
-            const result = await LessonService.createLesson(req.body);
-            res.status(201).json(result);
+            const authReq = req as AuthenticatedRequest;
+            if (!authReq.user || !authReq.user.userId) {
+                return res.status(401).json({ error: "Unauthorized" });
+            }
+
+            const userId = authReq.user.userId;
+
+            // Define validation schema
+            const createLessonSchema = z.object({
+                topic: z.string().optional(),
+                description: z.string().optional(),
+                classId: z.string().uuid("Invalid class ID"),
+                date: z.string().min(1, "Date is required"), // Could validate date format
+                startTime: z.string().min(1, "Start time is required"),
+                endTime: z.string().min(1, "End time is required"),
+            });
+
+            // Validate body
+            const validation = createLessonSchema.safeParse(req.body);
+
+            if (!validation.success) {
+                return res.status(400).json({ error: validation.error.format() });
+            }
+
+            const { topic, description, classId, date, startTime, endTime } = validation.data;
+
+            const lessonData = {
+                topic,
+                description,
+                classId,
+                date,
+                startTime,
+                endTime,
+                professorId: userId
+            };
+
+            const result = await LessonService.createLesson(lessonData);
+            return res.status(201).json(result);
         } catch (error: any) {
-            res.status(400).json({ error: error.message });
+            console.error(error); // Log internal errors
+            // Handle unique constraint violation (Postgres code 23505)
+            if (error.code === '23505') {
+                return res.status(409).json({ error: "Já existe uma aula agendada para esta turma neste horário." });
+            }
+            return res.status(400).json({ error: error.message });
         }
     }
 
