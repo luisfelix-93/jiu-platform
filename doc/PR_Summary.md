@@ -1,106 +1,115 @@
-# PR: Sistema de Notificações por Email e Melhorias de Validação
+# PR: Melhorias de Segurança - Security Headers (Backend)
 
 ## Visão Geral
-Esta pull request introduz um sistema completo de notificações por email na plataforma Jiu Platform. Quando um aluno marca presença em uma aula (`status = 'present'`), emails de confirmação são enviados automaticamente ao aluno e ao professor. Além disso, foram implementadas melhorias de validação no controlador de aulas e correções de fuso horário no frontend.
+Esta pull request implementa o tópico **Security Headers (Backend)** da lista de melhorias de segurança derivada de `doc/security_specs.md`. A mudança principal é a configuração personalizada do middleware `helmet` na aplicação Express, substituindo a configuração padrão por uma mais adequada para uma API REST que não serve conteúdo HTML diretamente.
 
-A branch `feature/notificacao` está **6 commits à frente** da `main`. As mudanças incluem **12 arquivos modificados**, com **247 inserções e 604 deleções** (a maioria proveniente da remoção de arquivos temporários e da reescrita da documentação).
+A branch `feature/security` está **1 commit à frente** da `main`. As modificações incluem **2 arquivos alterados**: a configuração do helmet no `app.ts` e a atualização do checklist `TODO.md`.
 
-## Commits Incluídos
+## Contexto
+Conforme especificado no `TODO.md`, o item **Security Headers (Backend)** exigia:
+1. Auditoria da configuração atual do `helmet`
+2. Configuração apropriada do `Content-Security-Policy` (CSP)
 
-### 20260107: Lógica de envio de email
-- **Criação do serviço de email**: Implementação da classe `EmailService` utilizando `nodemailer`.
-- **Configuração centralizada**: Criação de `email.config.ts` com validação Zod para variáveis de ambiente SMTP.
-- **Dependências**: Adição de `nodemailer` e `@types/nodemailer` ao `package.json`.
+A configuração padrão do `helmet()` inclui CSP e outros headers voltados para aplicações web que servem HTML. Como a Jiu Platform API é uma API REST pura (JSON), alguns headers como CSP não são necessários e podem até interferir com o frontend que consome a API.
 
-### 20260107: Notificações em presença  
-- **Integração no serviço de presença**: Modificação de `AttendanceService.registerAttendance` para disparar emails quando a presença é confirmada.
-- **Fluxo assíncrono**: O envio de emails ocorre em background, sem bloquear a resposta à requisição do cliente.
-- **Templates HTML simples**: Mensagens personalizadas para aluno e professor com detalhes da aula.
+## Mudanças Implementadas
 
-### 20260107: Documentação
-- **Atualização do README da API**: Adição da seção de configuração de email com variáveis de ambiente de exemplo.
-- **.gitignore**: Exclusão da pasta `jiu-api/src/scripts`.
+### 1. Configuração Personalizada do Helmet
+No arquivo `jiu-api/src/app.ts`, a linha `app.use(helmet())` foi substituída por uma configuração explícita que:
 
-### 20260107: Documentação (continuação)
-- **Reestruturação do PR_Summary.md**: O arquivo foi reescrito para refletir os commits recentes.
+- **Desabilita o CSP**: `contentSecurityPolicy: false` – uma API JSON não precisa de políticas de segurança de conteúdo, pois não serve HTML, scripts ou stylesheets diretamente. O CSP deve ser configurado no frontend que serve a interface web.
 
-### 20260108: Correção de Code Review
-- **Validação robusta no LessonController**: Implementação de schema Zod para validar todos os campos da criação de aula (`classId` como UUID, campos obrigatórios).
-- **Verificação de autenticação**: Garantia de que o `userId` do professor vem do token JWT.
-- **Tratamento de erros específico**: Captura do erro PostgreSQL `23505` (violação de unicidade) com retorno de status 409 e mensagem amigável.
-- **Otimização do envio de emails**: Uso de `Promise.all` para enviar notificações ao aluno e professor em paralelo.
-- **Verificação de segurança**: Confirmação de existência de email antes do envio.
+- **Configura política de referrer restrita**: `referrerPolicy: { policy: 'strict-origin-when-cross-origin' }` – limita o envio do cabeçalho Referer apenas para origens seguras (HTTPS), protegendo informações sensíveis em URLs.
 
-### 20260109: Correções no frontend
-- **Suporte a parâmetro de URL**: A página `ProfessorAttendance` agora aceita `?lessonId=...` para seleção automática da aula.
-- **Correção de fuso horário**: Uso de `addMinutes(parseISO(date), timezoneOffset)` para exibir datas corretamente no navegador.
-- **Remoção de arquivo temporário**: Deleção de `temp_commit_log.txt`.
+- **Bloqueia políticas cross-domain**: `xPermittedCrossDomainPolicies: { permittedPolicies: 'none' }` – impede que clientes Adobe (Flash, PDF) carreguem conteúdo cross-domain, mitigando ataques de clickjacking.
+
+- **Força HTTPS com HSTS**: `strictTransportSecurity: { maxAge: 31536000, includeSubDomains: true, preload: true }` – instrui navegadores a acessar a API apenas via HTTPS por 1 ano, incluindo subdomínios e permitindo pré-carregamento em listas HSTS.
+
+- **Proíbe framing**: `xFrameOptions: { action: 'deny' }` – impede que a API seja embutida em frames (iframe), prevenindo ataques de clickjacking.
+
+### 2. Manutenção dos Headers Padrão do Helmet
+A configuração mantém os seguintes headers padrão do helmet (que permanecem ativos por default):
+- `X-Content-Type-Options: nosniff` – previne MIME type sniffing
+- `X-DNS-Prefetch-Control: off` – desabilita prefetch de DNS para privacidade
+- `X-Download-Options: noopen` – previne execução automática de downloads no IE
+- `X-XSS-Protection: 0` – desabilita o filtro XSS legado (já obsoleto)
+
+### 3. Atualização do Checklist
+No arquivo `TODO.md`, o item **Security Headers (Backend)** foi marcado como concluído (`[x]`), mantendo o rastreamento do progresso das melhorias de segurança.
 
 ## Arquivos Modificados
 
 | Caminho | Alterações Realizadas | Impacto |
 |---------|----------------------|---------|
-| `jiu-api/src/config/email.config.ts` (novo) | Configuração SMTP com validação Zod via variáveis de ambiente. | Centraliza e valida as credenciais de email. |
-| `jiu-api/src/services/EmailService.ts` (novo) | Serviço singleton que encapsula `nodemailer.createTransport`. | Reutilização da conexão SMTP e envio genérico de emails. |
-| `jiu-api/src/services/AttendanceService.ts` | Integração com `EmailService`, disparo assíncrono de emails, uso de `Promise.all`. | Notificações automáticas ao aluno/professor quando presença é confirmada. |
-| `jiu-api/src/controllers/LessonController.ts` | Validação Zod, verificação de autenticação, tratamento de erro 23505. | Maior segurança e experiência de usuário (mensagens claras em caso de conflito). |
-| `jiu-api/package.json` | Adição de `nodemailer` e `@types/nodemailer`. | Dependências necessárias para o sistema de email. |
-| `jiu-api/README.md` | Seção de configuração de email e descrição da funcionalidade de notificações. | Documentação para desenvolvedores. |
-| `jiu-app/src/pages/professor/ProfessorAttendance.tsx` | Suporte a `useSearchParams`, correção de timezone com `addMinutes`/`parseISO`. | UX melhorada (seleção por URL) e exibição correta de datas. |
-| `jiu-app/src/pages/professor/ProfessorHome.tsx` | Ajustes menores de timezone. | Consistência na exibição de datas. |
-| `jiu-app/src/pages/professor/ProfessorLessons.tsx` | Ajustes menores de timezone. | Consistência na exibição de datas. |
-| `.gitignore` | Adição de `jiu-api/src/scripts`. | Evita commit de scripts internos. |
-| `doc/PR_Summary.md` | Reescrita completa para servir como corpo deste PR. | Documentação técnica das mudanças. |
-| `temp_commit_log.txt` (removido) | Arquivo temporário deletado. | Limpeza do repositório. |
+| `jiu-api/src/app.ts` | Substituição de `app.use(helmet())` por configuração personalizada com `contentSecurityPolicy: false` e headers específicos para API REST. | Headers de segurança otimizados para API JSON; CSP desabilitado (deve ser configurado no frontend). |
+| `TODO.md` | Atualização do checklist: `[ ]` → `[x]` no item **Security Headers (Backend)**. | Rastreamento claro do progresso nas melhorias de segurança. |
 
-## Dependências Adicionadas
-- `nodemailer` ^7.0.12
-- `@types/nodemailer` ^7.0.4
+## Impacto na Segurança
 
-## Configuração Necessária
-Para que o sistema de email funcione, as seguintes variáveis de ambiente devem ser definidas no backend:
+### Headers Adicionados/Configurados
+1. **Referrer-Policy: strict-origin-when-cross-origin**
+   - Protege URLs sensíveis vazadas no cabeçalho Referer
+   - Envia referrer apenas para origens HTTPS
 
-```env
-SMTP_HOST=smtp.mailtrap.io          # Host do servidor SMTP
-SMTP_PORT=2525                      # Porta (ex: 587 para TLS, 465 para SSL)
-SMTP_USER=seu_usuario               # Usuário SMTP (opcional dependendo do relay)
-SMTP_PASS=sua_senha                 # Senha SMTP (opcional)
-SMTP_FROM=nao-responda@jiujitsu.com # Email remetente (obrigatório, válido)
-SMTP_SECURE=false                   # true para SSL, false para TLS/STARTTLS
+2. **X-Permitted-Cross-Domain-Policies: none**
+   - Bloqueia políticas cross-domain para clientes Adobe
+   - Mitiga ataques de clickjacking via Flash/PDF
+
+3. **Strict-Transport-Security: max-age=31536000; includeSubDomains; preload**
+   - Força conexões HTTPS por 1 ano
+   - Aplica a todos os subdomínios
+   - Permite inclusão em listas de pré-carregamento HSTS
+
+4. **X-Frame-Options: DENY**
+   - Impede que a API seja embutida em frames
+   - Previne clickjacking attacks
+
+### Headers Desabilitados/Ajustados
+1. **Content-Security-Policy: desabilitado**
+   - Decisão técnica: APIs REST não servem HTML
+   - CSP deve ser implementado no frontend (jiu-app)
+   - Evita conflitos com políticas do frontend
+
+2. **Configurações padrão mantidas**: Todos os outros headers de segurança do helmet permanecem ativos com configurações conservadoras.
+
+## Configuração Técnica Detalhada
+
+```typescript
+app.use(helmet({
+    contentSecurityPolicy: false, // API não serve HTML, CSP não necessário
+    referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+    xPermittedCrossDomainPolicies: { permittedPolicies: 'none' },
+    strictTransportSecurity: {
+        maxAge: 31536000,
+        includeSubDomains: true,
+        preload: true
+    },
+    xFrameOptions: { action: 'deny' }
+}));
 ```
 
-O sistema falha rapidamente (`process.exit(1)`) se alguma variável obrigatória estiver ausente ou inválida.
-
-## Impacto no Sistema
-
-### Para Usuários
-- **Alunos**: Recebem email de confirmação quando sua presença é marcada como "presente".
-- **Professores**: Recebem notificação por email quando um aluno confirma presença em sua aula.
-- **Experiência unificada**: As datas são exibidas corretamente, independente do fuso horário do navegador.
-
-### Para Desenvolvedores
-- **Validação robusta**: O `LessonController` agora valida entrada com Zod, retornando erros detalhados (400) em caso de dados inválidos.
-- **Segurança reforçada**: A criação de aula exige autenticação (o `professorId` é extraído do token JWT).
-- **Tratamento de erros aprimorado**: Conflitos de horário (aula duplicada) retornam status 409 com mensagem clara.
-- **Manutenção simplificada**: Configuração de email centralizada e validada.
-
-### Para a Infraestrutura
-- **Conexão SMTP reutilizável**: O `EmailService` mantém uma única instância do transporter.
-- **Envios assíncronos**: O fluxo principal da API não é bloqueado pelo envio de emails.
-- **Fallback em texto plano**: Emails incluem versão `text` além do `html` para clientes que não suportam HTML.
+**Justificativa técnica**:
+- `contentSecurityPolicy: false`: APIs JSON não precisam de CSP. O frontend React (jiu-app) deve configurar seu próprio CSP apropriado para aplicação web.
+- `strict-origin-when-cross-origin`: Balanceia privacidade e funcionalidade para referrers.
+- `maxAge=31536000`: 1 ano em segundos, tempo recomendado para HSTS.
+- `preload: true`: Permite inclusão em listas HSTS de navegadores (após envio para hstspreload.org).
+- `action: 'deny'`: Máxima proteção contra clickjacking.
 
 ## Testes Realizados
-- **Configuração de ambiente**: Validação Zod rejeita corretamente variáveis ausentes ou malformadas.
-- **Envio de email**: Testes manuais com serviço SMTP (Mailtrap) confirmam entrega.
-- **Integração de presença**: Registro de presença dispara emails para aluno e professor (quando ambos têm email cadastrado).
-- **Validação de aula**: Tentativa de criar aula com dados inválidos retorna erro 400; conflito de horário retorna 409.
-- **Correção de timezone**: Datas exibidas no frontend correspondem ao fuso horário local do usuário.
-- **Parâmetro de URL**: Acesso a `ProfessorAttendance?lessonId=...` seleciona automaticamente a aula correspondente.
+- **Build TypeScript**: Comando `npm run build` executado com sucesso, confirmando que a configuração é válida e tipada corretamente.
+- **Verificação de headers**: Análise manual da configuração contra documentação oficial do helmet v8.1.0.
+- **Compatibilidade**: Configuração mantém compatibilidade com todos os middlewares existentes (CORS, rate limiting, cookie parser).
 
-## Próximos Passos Sugeridos
-1. **Template engine**: Substituir strings HTML embutidas por templates (ex: Handlebars, EJS) para facilitar customização.
-2. **Fila de emails**: Implementar sistema de fila (Bull, RabbitMQ) para garantir entrega em caso de falha temporária do SMTP.
-3. **Logs de notificação**: Armazenar no banco de dados histórico de emails enviados (para auditoria).
-4. **Configuração por professor**: Permitir que professores desativem notificações por email.
-5. **Testes automatizados**: Adicionar testes unitários para `EmailService` e `AttendanceService`.
-6. **Webhooks**: Estender o sistema para enviar notificações via WhatsApp ou SMS (integração com serviços como Twilio).
+## Próximos Passos (Itens Pendentes no TODO.md)
+1. **Input Validation Scope (Backend)**: Estender validação Zod para todos os controllers (não apenas Auth).
+2. **Type Safety (Backend)**: Extender tipo `Request` do Express para incluir `user` globalmente, eliminando `(req as any).user`.
+
+## Considerações para Deployment
+- **HSTS preload**: A flag `preload: true` permite inclusão futura em listas HSTS. Para produção, submeter domínio a hstspreload.org após garantir suporte HTTPS completo.
+- **CSP no frontend**: O frontend (jiu-app) deve implementar CSP apropriado para sua aplicação React.
+- **Ambiente de desenvolvimento**: HSTS pode causar redirects forçados para HTTPS em `localhost`. Em desenvolvimento, considerar desabilitar `strictTransportSecurity` ou usar `maxAge` menor.
+
+## Referências
+- [Helmet.js Documentation](https://helmetjs.github.io/)
+- [OWASP Secure Headers Project](https://owasp.org/www-project-secure-headers/)
+- [MDN HTTP Headers](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers)
