@@ -4,15 +4,24 @@ import { ScheduledLesson } from "../entities/ScheduledLesson";
 import { User } from "../entities/User";
 import { ClassEnrollment } from "../entities/ClassEnrollment";
 import { EmailService } from "./EmailService";
+import escapeHtml from "escape-html";
 
 const attendanceRepository = AppDataSource.getRepository(Attendance);
 const lessonRepository = AppDataSource.getRepository(ScheduledLesson);
 const userRepository = AppDataSource.getRepository(User);
 const enrollmentRepository = AppDataSource.getRepository(ClassEnrollment);
 
+interface RegisterAttendanceData {
+    lessonId: string;
+    userId: string;
+    status: string;
+    checkedBy?: string;
+    notes?: string;
+}
+
 export class AttendanceService {
 
-    static async registerAttendance(data: any) {
+    static async registerAttendance(data: RegisterAttendanceData) {
         const { lessonId, userId, status, checkedBy, notes } = data;
 
         const lesson = await lessonRepository.findOne({
@@ -62,26 +71,37 @@ export class AttendanceService {
 
         // Email to Student
         if (student.email) {
+            const escapedStudentName = escapeHtml(student.name);
+            const escapedClassName = escapeHtml(lesson.class.name);
+            const escapedDate = escapeHtml(lesson.date);
+            const escapedStartTime = escapeHtml(lesson.startTime);
+
             promises.push(EmailService.sendMail(
                 student.email,
                 "Presença Confirmada - Jiu Platform",
                 `
                 <h1>Presença Confirmada!</h1>
-                <p>Olá ${student.name},</p>
-                <p>Sua presença foi confirmada para a aula <strong>${lesson.class.name}</strong> agendada para <strong>${lesson.date}</strong> às <strong>${lesson.startTime}</strong>.</p>
+                <p>Olá ${escapedStudentName},</p>
+                <p>Sua presença foi confirmada para a aula <strong>${escapedClassName}</strong> agendada para <strong>${escapedDate}</strong> às <strong>${escapedStartTime}</strong>.</p>
                 `
             ));
         }
 
         // Email to Professor
         if (lesson.professor && lesson.professor.email) {
+            const escapedProfessorName = escapeHtml(lesson.professor.name);
+            const escapedStudentName = escapeHtml(student.name);
+            const escapedClassName = escapeHtml(lesson.class.name);
+            const escapedDate = escapeHtml(lesson.date);
+            const escapedStartTime = escapeHtml(lesson.startTime);
+
             promises.push(EmailService.sendMail(
                 lesson.professor.email,
                 "Presença do Aluno Confirmada - Jiu Platform",
                 `
                 <h1>Presença do Aluno Confirmada!</h1>
-                <p>Olá Professor ${lesson.professor.name},</p>
-                <p><strong>${student.name}</strong> marcou presença na sua aula<strong>${lesson.class.name}</strong> agendada para <strong>${lesson.date}</strong> às <strong>${lesson.startTime}</strong>.</p>
+                <p>Olá Professor ${escapedProfessorName},</p>
+                <p><strong>${escapedStudentName}</strong> marcou presença na sua aula <strong>${escapedClassName}</strong> agendada para <strong>${escapedDate}</strong> às <strong>${escapedStartTime}</strong>.</p>
                 `
             ));
         }

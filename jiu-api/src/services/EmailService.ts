@@ -19,8 +19,18 @@ export class EmailService {
         return this.transporter;
     }
 
+    private static isValidEmail(email: string): boolean {
+        // Basic email format validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
+    }
+
     static async sendMail(to: string, subject: string, html: string) {
         try {
+            if (!this.isValidEmail(to)) {
+                throw new Error("Invalid recipient email address");
+            }
+
             const transporter = this.getTransporter();
 
             // Simple fallback: strip tags. ideally use a library like 'html-to-text' but this suffices for now

@@ -1,5 +1,16 @@
 import api from "../lib/api";
 
+export interface AttendanceRecord {
+    userId: string;
+    status: 'present' | 'absent' | 'late';
+    checkInTime?: string;
+    notes?: string;
+    user?: {
+        name: string;
+        beltColor?: string;
+    };
+}
+
 export interface AttendanceStats {
     totalClasses: number;
     monthlyAttendance: { month: string; count: number }[];
@@ -21,13 +32,13 @@ export const AttendanceService = {
         return data;
     },
 
-    async getLessonAttendance(lessonId: string): Promise<any[]> {
+    async getLessonAttendance(lessonId: string): Promise<AttendanceRecord[]> {
         const { data } = await api.get(`/lessons/${lessonId}/attendance`);
         return data;
     },
 
     // Register single attendance (or update)
-    async register(lessonId: string, data: { userId: string; status: string; notes?: string }): Promise<any> {
+    async register(lessonId: string, data: { userId: string; status: string; notes?: string }): Promise<AttendanceRecord> {
         // According to routes: PUT /api/attendance/:lessonId
         // But body has userId.
         const response = await api.put(`/attendance/${lessonId}`, data);

@@ -1,11 +1,21 @@
 import api from "../lib/api";
+import { Lesson } from "./lesson.service";
+import { AttendanceRecord } from "./attendance.service";
 
 export interface DashboardData {
-    upcomingLessons: any[];
-    recentAttendance: any[];
+    upcomingLessons: Lesson[];
+    recentAttendance: AttendanceRecord[];
     stats: {
         totalAttended: number;
     }
+}
+
+export interface ProfessorDashboardData {
+    upcomingLessons: Lesson[];
+    stats?: {
+        totalClasses?: number;
+        totalStudents?: number;
+    };
 }
 
 export const DashboardService = {
@@ -19,7 +29,7 @@ export const DashboardService = {
         return data;
     },
 
-    async getProfessorData(): Promise<any> {
+    async getProfessorData(): Promise<ProfessorDashboardData> {
         const { data } = await api.get("/dashboard/professor");
         return data;
     }

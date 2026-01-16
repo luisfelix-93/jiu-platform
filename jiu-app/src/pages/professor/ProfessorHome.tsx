@@ -4,13 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Ca
 import { Button } from '../../components/ui/Button';
 import { Users } from 'lucide-react';
 import { useAuthStore } from '../../stores/useAuthStore';
-import { DashboardService } from '../../services/dashboard.service';
+import { DashboardService, type ProfessorDashboardData } from '../../services/dashboard.service';
 import { format, parseISO } from 'date-fns';
 
 export const ProfessorHome = () => {
     const { user } = useAuthStore();
     const navigate = useNavigate();
-    const [data, setData] = useState<any>(null);
+    const [data, setData] = useState<ProfessorDashboardData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
