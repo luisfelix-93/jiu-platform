@@ -48,11 +48,12 @@ Backend da plataforma de gestão para academias de Jiu-Jitsu. Esta API RESTful g
    REFRESH_TOKEN_EXPIRES_IN=7d
    
    # Configurações de Email
-   MAIL_HOST=smtp.mailtrap.io
-   MAIL_PORT=2525
-   MAIL_USER=seu_usuario
-   MAIL_PASS=sua_senha
-   MAIL_FROM=nao-responda@jiujitsu.com
+   SMTP_HOST=smtp.mailtrap.io
+   SMTP_PORT=2525
+   SMTP_USER=seu_usuario
+   SMTP_PASS=sua_senha
+   SMTP_FROM=nao-responda@jiujitsu.com
+   SMTP_SECURE=false
    ```
 
 4. **Banco de Dados e Migrações**:

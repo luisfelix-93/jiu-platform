@@ -1,22 +1,17 @@
 import { Request, Response } from "express";
 import { LessonService } from "../services/LessonService";
 import { z } from "zod";
-
-interface AuthenticatedRequest extends Request {
-    user?: {
-        userId: string;
-    };
-}
+import { AuthRequest, JwtPayload } from "../middlewares/auth.middleware";
 
 export class LessonController {
     static async create(req: Request, res: Response) {
         try {
-            const authReq = req as AuthenticatedRequest;
-            if (!authReq.user || !authReq.user.userId) {
+            const authReq = req as AuthRequest;
+            if (!authReq.user || typeof authReq.user === 'string') {
                 return res.status(401).json({ error: "Unauthorized" });
             }
 
-            const userId = authReq.user.userId;
+            const userId = (authReq.user as JwtPayload).userId;
 
             // Define validation schema
             const createLessonSchema = z.object({
@@ -50,7 +45,7 @@ export class LessonController {
             const result = await LessonService.createLesson(lessonData);
             return res.status(201).json(result);
         } catch (error: any) {
-            console.error(error); // Log internal errors
+            console.error("Error creating lesson:", error?.message); // Log sanitized error information
             // Handle unique constraint violation (Postgres code 23505)
             if (error.code === '23505') {
                 return res.status(409).json({ error: "Já existe uma aula agendada para esta turma neste horário." });

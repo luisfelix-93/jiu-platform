@@ -3,15 +3,15 @@ import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { LessonService, type Lesson } from '../../services/lesson.service';
-import { AttendanceService } from '../../services/attendance.service';
+import { AttendanceService, type AttendanceRecord } from '../../services/attendance.service';
 import { Check, X, Clock, Calendar } from 'lucide-react';
-import { format, addMinutes, parseISO } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 export const ProfessorAttendance = () => {
     const [lessons, setLessons] = useState<Lesson[]>([]);
     const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
-    const [attendanceList, setAttendanceList] = useState<any[]>([]);
+    const [attendanceList, setAttendanceList] = useState<AttendanceRecord[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     const [searchParams] = useSearchParams();
@@ -104,7 +104,7 @@ export const ProfessorAttendance = () => {
                                     </div>
                                     <div className="text-sm text-neutral-500 flex items-center gap-2">
                                         <Calendar className="h-3 w-3" />
-                                        {format(addMinutes(parseISO(lesson.date), new Date().getTimezoneOffset()), "dd/MM/yyyy", { locale: ptBR })}
+                                        {format(parseISO(lesson.date), "dd/MM/yyyy", { locale: ptBR })}
                                     </div>
                                     <div className="text-sm text-neutral-500 flex items-center gap-2 mt-1">
                                         <Clock className="h-3 w-3" />
@@ -124,7 +124,7 @@ export const ProfessorAttendance = () => {
                                 <CardTitle className="flex justify-between items-center">
                                     <span>Lista de Presença</span>
                                     <span className="text-sm font-normal text-neutral-500">
-                                        {format(addMinutes(parseISO(selectedLesson.date), new Date().getTimezoneOffset()), "dd 'de' MMMM", { locale: ptBR })}
+                                        {format(parseISO(selectedLesson.date), "dd 'de' MMMM", { locale: ptBR })}
                                     </span>
                                 </CardTitle>
                             </CardHeader>
