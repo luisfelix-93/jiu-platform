@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { LessonService } from "../services/LessonService";
 import { z } from "zod";
-import { AuthRequest } from "../middlewares/auth.middleware";
+import { AuthRequest, JwtPayload } from "../middlewares/auth.middleware";
 
 export class LessonController {
     static async create(req: Request, res: Response) {
@@ -11,7 +11,7 @@ export class LessonController {
                 return res.status(401).json({ error: "Unauthorized" });
             }
 
-            const userId = (authReq.user as any).userId;
+            const userId = (authReq.user as JwtPayload).userId;
 
             // Define validation schema
             const createLessonSchema = z.object({

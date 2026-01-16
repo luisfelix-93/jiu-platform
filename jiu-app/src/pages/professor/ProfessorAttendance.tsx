@@ -42,7 +42,7 @@ export const ProfessorAttendance = () => {
                 handleLessonSelect(preselected);
             }
         }
-    }, [lessons, lessonIdParam, selectedLesson]);
+    }, [lessons, lessonIdParam]);
 
     const fetchAttendance = async (lessonId: string) => {
         try {

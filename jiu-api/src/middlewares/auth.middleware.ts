@@ -3,8 +3,14 @@ import * as jwt from "jsonwebtoken";
 
 import { authConfig } from "../config/auth.config";
 
+export interface JwtPayload {
+    userId: string;
+    email: string;
+    role: string;
+}
+
 export interface AuthRequest extends Request {
-    user?: jwt.JwtPayload | string;
+    user?: JwtPayload | jwt.JwtPayload | string;
 }
 
 export const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
