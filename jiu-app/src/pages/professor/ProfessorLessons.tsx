@@ -8,6 +8,7 @@ import { Input } from '../../components/ui/Input';
 import { LessonService, type Lesson } from '../../services/lesson.service';
 import { ClassService, type Class } from '../../services/class.service';
 import { Calendar, Clock, Plus, Trash2, Edit2, X } from 'lucide-react';
+import { ContentService } from '../../services/content.service';
 import { format, addMinutes, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -34,6 +35,8 @@ export const ProfessorLessons = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showForm, setShowForm] = useState(false);
     const [editingLessonId, setEditingLessonId] = useState<string | null>(null);
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [isUploading, setIsUploading] = useState(false);
 
     const {
         register,
@@ -67,13 +70,36 @@ export const ProfessorLessons = () => {
     const onSubmit = async (data: CreateLessonSchema) => {
         setIsSubmitting(true);
         try {
+            let lessonId = editingLessonId;
             if (editingLessonId) {
                 await LessonService.updateLesson(editingLessonId, data);
             } else {
-                await LessonService.createLesson(data);
+                const newLesson = await LessonService.createLesson(data);
+                lessonId = newLesson.id;
             }
+
+            if (selectedFile && lessonId) {
+                setIsUploading(true);
+                try {
+                    const { uploadUrl, publicUrl } = await ContentService.getUploadUrl(selectedFile.name, selectedFile.type, lessonId);
+                    await ContentService.uploadFile(uploadUrl, selectedFile);
+                    await ContentService.saveContentMetadata(lessonId, {
+                        title: data.topic || 'Video da Aula',
+                        description: 'Video carregado via gestão de aulas',
+                        contentType: 'video',
+                        fileUrl: publicUrl
+                    });
+                } catch (uploadError) {
+                    console.error("Upload failed", uploadError);
+                    alert("Aula salva, mas erro ao enviar vídeo.");
+                } finally {
+                    setIsUploading(false);
+                }
+            }
+
             setShowForm(false);
             setEditingLessonId(null);
+            setSelectedFile(null);
             reset();
             fetchData();
         } catch (error) {
@@ -128,6 +154,7 @@ export const ProfessorLessons = () => {
     const cancelForm = () => {
         setShowForm(false);
         setEditingLessonId(null);
+        setSelectedFile(null);
         reset();
     };
 
@@ -175,6 +202,33 @@ export const ProfessorLessons = () => {
                                 </div>
 
                                 <div className="space-y-2">
+                                    <label className="text-sm font-medium">Vídeo da Aula (Upload local)</label>
+                                    <div className="flex flex-col gap-2">
+                                        <input
+                                            type="file"
+                                            accept="video/*"
+                                            className="block w-full text-sm text-neutral-500
+                                                file:mr-4 file:py-2 file:px-4
+                                                file:rounded-full file:border-0
+                                                file:text-sm file:font-semibold
+                                                file:bg-primary/10 file:text-primary
+                                                hover:file:bg-primary/20
+                                            "
+                                            onChange={(e) => {
+                                                if (e.target.files && e.target.files[0]) {
+                                                    setSelectedFile(e.target.files[0]);
+                                                }
+                                            }}
+                                        />
+                                        {selectedFile && (
+                                            <p className="text-xs text-neutral-500">
+                                                Arquivo selecionado: <span className="font-medium text-gray-900">{selectedFile.name}</span>
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
                                     <label className="text-sm font-medium">Data</label>
                                     <Input type="date" {...register('date')} />
                                     {errors.date && <span className="text-xs text-error">{errors.date.message}</span>}
@@ -198,8 +252,8 @@ export const ProfessorLessons = () => {
                                 <Button type="button" variant="outline" onClick={cancelForm} disabled={isSubmitting}>
                                     Cancelar
                                 </Button>
-                                <Button type="submit" isLoading={isSubmitting}>
-                                    {editingLessonId ? 'Salvar Alterações' : 'Agendar Aula'}
+                                <Button type="submit" isLoading={isSubmitting || isUploading}>
+                                    {isUploading ? 'Enviando Vídeo...' : (editingLessonId ? 'Salvar Alterações' : 'Agendar Aula')}
                                 </Button>
                             </div>
                         </form>
