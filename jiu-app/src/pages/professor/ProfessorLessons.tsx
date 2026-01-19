@@ -155,6 +155,11 @@ export const ProfessorLessons = () => {
         setShowForm(false);
         setEditingLessonId(null);
         setSelectedFile(null);
+        // Ensure any file input elements are also cleared so the UI matches the reset state
+        const fileInputs = document.querySelectorAll<HTMLInputElement>('input[type="file"]');
+        fileInputs.forEach((input) => {
+            input.value = '';
+        });
         reset();
     };
 
