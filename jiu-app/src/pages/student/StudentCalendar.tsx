@@ -7,7 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Ca
 import { Modal } from '../../components/ui/Modal';
 import { Button } from '../../components/ui/Button';
 import { LessonService } from '../../services/lesson.service';
+import { ContentService } from '../../services/content.service';
 import { CheckCircle2 } from 'lucide-react';
+import { VideoPlayer } from '../../components/VideoPlayer';
 
 const locales = {
     'pt-BR': ptBR,
@@ -38,6 +40,7 @@ export const StudentCalendar = () => {
     const [events, setEvents] = useState<CalendarEvent[]>([]);
     const [attendanceStatus, setAttendanceStatus] = useState<{ checkedIn: boolean; status?: string } | null>(null);
     const [isLoadingAttendance, setIsLoadingAttendance] = useState(false);
+    const [videoUrl, setVideoUrl] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchLessons = async () => {
@@ -71,11 +74,21 @@ export const StudentCalendar = () => {
         setIsModalOpen(true);
         setAttendanceStatus(null);
         setIsLoadingAttendance(true);
+        setVideoUrl(null);
+
         try {
-            const status = await LessonService.getAttendanceStatus(event.id);
+            const [status, content] = await Promise.all([
+                LessonService.getAttendanceStatus(event.id),
+                ContentService.getLessonContent(event.id)
+            ]);
             setAttendanceStatus(status);
+
+            const video = content.find(c => c.contentType === 'video' || c.contentType.startsWith('video/'));
+            if (video && video.fileUrl) {
+                setVideoUrl(video.fileUrl);
+            }
         } catch (error) {
-            console.error("Failed to fetch attendance status", error);
+            console.error("Failed to fetch details", error);
         } finally {
             setIsLoadingAttendance(false);
         }
@@ -136,6 +149,7 @@ export const StudentCalendar = () => {
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 title={selectedEvent?.title}
+                maxWidth="max-w-2xl"
             >
                 <div className="space-y-4">
                     <div>
@@ -156,6 +170,13 @@ export const StudentCalendar = () => {
                             {selectedEvent?.notes || "Nenhuma anotação disponível."}
                         </p>
                     </div>
+
+                    {videoUrl && (
+                        <div>
+                            <h4 className="text-sm font-semibold text-neutral-500 uppercase tracking-wider mb-2">Vídeo da Aula</h4>
+                            <VideoPlayer src={videoUrl} />
+                        </div>
+                    )}
 
                     <div className="pt-4 border-t flex justify-end">
                         {attendanceStatus?.checkedIn ? (
