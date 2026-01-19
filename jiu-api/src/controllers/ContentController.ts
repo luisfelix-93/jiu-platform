@@ -42,4 +42,17 @@ export class ContentController {
             res.status(400).json({ error: error.message });
         }
     }
+
+    static async getUploadUrl(req: Request, res: Response) {
+        try {
+            const { fileName, contentType, lessonId } = req.body;
+            if (!fileName || !contentType) {
+                return res.status(400).json({ error: "fileName and contentType are required" });
+            }
+            const result = await ContentService.generateUploadUrl(fileName, contentType, lessonId);
+            res.json(result);
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
 }

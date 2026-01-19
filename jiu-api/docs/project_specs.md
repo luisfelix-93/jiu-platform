@@ -211,7 +211,7 @@ GET    /api/content/:id        # Obter conteúdo específico
 PUT    /api/content/:id        # Atualizar conteúdo
 DELETE /api/content/:id        # Remover conteúdo
 GET    /api/content/library    # Biblioteca de conteúdo (todos os vídeos com filtros)
-POST   /api/content/upload-signed-url # Gerar URL assinada para upload (S3)
+POST   /api/content/upload-url # Gerar URL assinada para upload (R2/S3)
 ```
 ### 4.7 Dashboard
 ```text
@@ -408,11 +408,12 @@ STORAGE_TYPE=local  # ou 's3'
 UPLOAD_DIR=./uploads
 MAX_FILE_SIZE=100mb
 
-# S3 (futuro)
-AWS_ACCESS_KEY_ID=your_key
-AWS_SECRET_ACCESS_KEY=your_secret
-AWS_REGION=us-east-1
-AWS_BUCKET_NAME=jiujitsu-videos
+# Cloudflare R2 / AWS S3
+R2_ACCOUNT_ID=your_account_id
+R2_ACCESS_KEY_ID=your_access_key
+R2_SECRET_ACCESS_KEY=your_secret_key
+R2_BUCKET_NAME=jiu-platform-videos
+R2_PUBLIC_URL=https://pub-xxxx.r2.dev
 ```
 ## 9. API Responses
 ### 9.1. Respostas de sucesso

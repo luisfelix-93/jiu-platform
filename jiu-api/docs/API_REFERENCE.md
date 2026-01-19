@@ -269,7 +269,70 @@ Isso significa que você deve chamar `PUT /api/attendance/{lessonId}` passando o
 
 ---
 
-### 6. Dashboard (`/api/dashboard`)
+---
+
+### 6. Conteúdo (`/api/content`)
+
+#### Gerar URL de Upload (Video)
+**POST** `/upload-url`
+*Auth: Bearer Token (Professor/Admin)*
+
+Gera uma URL assinada (Presigned URL) para upload direto de vídeo para o Cloudflare R2 (ou S3).
+
+**Corpo da Requisição:**
+```json
+{
+  "fileName": "aula_jiu_jitsu.mp4",
+  "contentType": "video/mp4",
+  "lessonId": "uuid-da-aula" // Opcional, para organizar pastas
+}
+```
+
+**Resposta de Sucesso (200 OK):**
+```json
+{
+  "uploadUrl": "https://<account>.r2.cloudflarestorage.com/...", // URL para fazer o PUT
+  "publicUrl": "https://pub-<bucket>.r2.dev/...", // URL final do arquivo
+  "key": "lessons/uuid-da-aula/timestamp-aula_jiu_jitsu.mp4"
+}
+```
+
+#### Salvar Metadados do Conteúdo
+**POST** `/upload/:lessonId`
+*Auth: Bearer Token (Professor/Admin)*
+
+Salva os detalhes do conteúdo no banco de dados após o upload do arquivo ser concluído com sucesso.
+
+**Corpo da Requisição:**
+```json
+{
+  "title": "Técnica da Semana",
+  "description": "Explicação detalhada da posição",
+  "contentType": "video", // video, document, link
+  "fileUrl": "https://pub-<bucket>.r2.dev/..."
+}
+```
+
+**Resposta de Sucesso (201 Created):**
+```json
+{
+  "id": "uuid-do-conteudo",
+  "lessonId": "uuid-da-aula",
+  "title": "Técnica da Semana",
+  "fileUrl": "...",
+  "createdAt": "..."
+}
+```
+
+#### Listar Biblioteca
+**GET** `/library`
+*Auth: Bearer Token*
+
+Lista todo o conteúdo disponível na biblioteca.
+
+---
+
+### 7. Dashboard (`/api/dashboard`)
 
 #### Obter Dados do Dashboard
 **GET** `/`
