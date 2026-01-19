@@ -53,6 +53,13 @@ Backend da plataforma de gestão para academias de Jiu-Jitsu. Esta API RESTful g
    MAIL_USER=seu_usuario
    MAIL_PASS=sua_senha
    MAIL_FROM=nao-responda@jiujitsu.com
+
+   # Storage (Cloudflare R2 / AWS S3) - Para upload de vídeos
+   R2_ACCOUNT_ID=seu_account_id
+   R2_ACCESS_KEY_ID=sua_access_key
+   R2_SECRET_ACCESS_KEY=sua_secret_key
+   R2_BUCKET_NAME=jiujitsu-videos
+   R2_PUBLIC_URL=https://pub-xxxx.r2.dev # Opcional
    ```
 
 4. **Banco de Dados e Migrações**:

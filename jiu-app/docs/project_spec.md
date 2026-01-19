@@ -105,7 +105,7 @@ Requisições HTTP: Axios + React Query
 Formulários: React Hook Form + Zod (validação)
 Calendário: React Big Calendar
 Player de Vídeo: Video.js (simples) ou Plyr
-Upload: React Dropzone
+Upload: Nativo (File Input) -> Cloudflare R2 (Presigned URLs)
 Ícones: Lucide React
 ```
 
