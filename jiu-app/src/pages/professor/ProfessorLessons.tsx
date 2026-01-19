@@ -89,9 +89,20 @@ export const ProfessorLessons = () => {
                         contentType: 'video',
                         fileUrl: publicUrl
                     });
-                } catch (uploadError) {
+                } catch (uploadError: any) {
                     console.error("Upload failed", uploadError);
-                    alert("Aula salva, mas erro ao enviar vídeo.");
+                    let message = "Aula salva, mas ocorreu um erro ao enviar o vídeo.";
+                    const status = uploadError?.response?.status ?? uploadError?.status;
+                    if (status === 413) {
+                        message += " O arquivo de vídeo parece ser muito grande. Tente enviar um arquivo menor.";
+                    } else if (typeof status === "number" && status >= 500) {
+                        message += " Houve um problema no servidor ao processar o envio. Tente novamente mais tarde.";
+                    } else if (typeof status === "number" && status >= 400) {
+                        message += " Verifique o arquivo de vídeo e tente novamente.";
+                    } else if (uploadError instanceof Error && uploadError.message) {
+                        message += " Detalhes: " + uploadError.message;
+                    }
+                    alert(message);
                 } finally {
                     setIsUploading(false);
                 }
