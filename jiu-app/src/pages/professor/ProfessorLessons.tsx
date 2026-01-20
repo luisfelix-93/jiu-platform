@@ -7,10 +7,12 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { LessonService, type Lesson } from '../../services/lesson.service';
 import { ClassService, type Class } from '../../services/class.service';
-import { Calendar, Clock, Plus, Trash2, Edit2, X } from 'lucide-react';
+import { Calendar, Clock, Plus, Trash2, Edit2, X, PlayCircle } from 'lucide-react';
 import { ContentService } from '../../services/content.service';
 import { format, addMinutes, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { Modal } from '../../components/ui/Modal';
+import { VideoPlayer } from '../../components/VideoPlayer';
 
 interface CreateLessonSchema {
     classId: string;
@@ -37,6 +39,8 @@ export const ProfessorLessons = () => {
     const [editingLessonId, setEditingLessonId] = useState<string | null>(null);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [isUploading, setIsUploading] = useState(false);
+    const [selectedVideo, setSelectedVideo] = useState<{ url: string; title: string } | null>(null);
+    const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
 
     const {
         register,
@@ -150,6 +154,26 @@ export const ProfessorLessons = () => {
     // So `lesson.class` is the relation object. It SHOULD have the ID if TypeORM serialized it. 
     // Usually TypeORM relations include the full object. So `lesson.class.id` should exist if we typed it correctly.
     // Let's assume `lesson.class` has `id` regardless of our frontend interface definition.
+
+    const handleWatchVideo = async (lesson: Lesson) => {
+        try {
+            const content = await ContentService.getLessonContent(lesson.id);
+            const videoContent = content.find(c => c.contentType === 'video' || c.contentType.startsWith('video/'));
+
+            if (videoContent && videoContent.fileUrl) {
+                setSelectedVideo({
+                    url: videoContent.fileUrl,
+                    title: videoContent.title || lesson.topic || 'Aula'
+                });
+                setIsVideoModalOpen(true);
+            } else {
+                alert("Nenhum vídeo disponível para esta aula.");
+            }
+        } catch (error) {
+            console.error(error);
+            alert("Erro ao carregar vídeo.");
+        }
+    };
 
     const handleDelete = async (id: string) => {
         if (!confirm("Tem certeza que deseja excluir esta aula?")) return;
@@ -296,6 +320,9 @@ export const ProfessorLessons = () => {
                                 </div>
                             </div>
                             <div className="flex items-center gap-2 w-full md:w-auto">
+                                <Button variant="secondary" size="sm" onClick={() => handleWatchVideo(lesson)} title="Assistir Vídeo">
+                                    <PlayCircle size={16} />
+                                </Button>
                                 <Button variant="outline" size="sm" onClick={() => handleEdit(lesson)}>
                                     <Edit2 size={16} />
                                 </Button>
@@ -314,6 +341,22 @@ export const ProfessorLessons = () => {
                     </div>
                 )}
             </div>
+
+            <Modal
+                isOpen={isVideoModalOpen}
+                onClose={() => {
+                    setIsVideoModalOpen(false);
+                    setSelectedVideo(null);
+                }}
+                title={selectedVideo?.title || 'Assistir Aula'}
+                maxWidth="max-w-4xl"
+            >
+                {selectedVideo ? (
+                    <VideoPlayer src={selectedVideo.url} />
+                ) : (
+                    <p className="text-center p-4">Carregando vídeo...</p>
+                )}
+            </Modal>
         </div>
     );
 };

@@ -3,9 +3,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Ca
 import { Button } from '../../components/ui/Button';
 import { PlayCircle, Clock } from 'lucide-react';
 import { ContentService } from '../../services/content.service';
+import { Modal } from '../../components/ui/Modal';
+import { VideoPlayer } from '../../components/VideoPlayer';
 
 export const StudentTechniques = () => {
     const [contents, setContents] = useState<any[]>([]);
+    const [selectedVideo, setSelectedVideo] = useState<{ url: string; title: string } | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
     useEffect(() => {
         const fetchContent = async () => {
@@ -19,6 +23,18 @@ export const StudentTechniques = () => {
         fetchContent();
     }, []);
 
+    const handleWatchVideo = (content: any) => {
+        if (content.contentType === 'video' || content.contentType?.startsWith('video/') || content.fileUrl) {
+            setSelectedVideo({
+                url: content.fileUrl,
+                title: content.title
+            });
+            setIsModalOpen(true);
+        } else {
+            alert("Este conteúdo não é um vídeo.");
+        }
+    };
+
     return (
         <div className="space-y-6">
             <header>
@@ -29,7 +45,7 @@ export const StudentTechniques = () => {
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {contents.length > 0 ? (
                     contents.map((tech) => (
-                        <Card key={tech.id} className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer group">
+                        <Card key={tech.id} className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer group" onClick={() => handleWatchVideo(tech)}>
                             <div className="relative aspect-video bg-neutral-200">
                                 <img src={tech.thumbnailUrl || 'https://images.unsplash.com/photo-1599058945522-28d584b6f0ff?auto=format&fit=crop&q=80&w=300&h=200'} alt={tech.title} className="w-full h-full object-cover" />
                                 <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
@@ -55,6 +71,22 @@ export const StudentTechniques = () => {
                     </div>
                 )}
             </div>
+
+            <Modal
+                isOpen={isModalOpen}
+                onClose={() => {
+                    setIsModalOpen(false);
+                    setSelectedVideo(null);
+                }}
+                title={selectedVideo?.title || 'Assistir Aula'}
+                maxWidth="max-w-4xl"
+            >
+                {selectedVideo ? (
+                    <VideoPlayer src={selectedVideo.url} />
+                ) : (
+                    <p className="text-center p-4">Erro ao carregar vídeo.</p>
+                )}
+            </Modal>
         </div>
     );
 };
