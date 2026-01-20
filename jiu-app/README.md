@@ -26,6 +26,7 @@ Interface web moderna para a plataforma de gestão de academias de Jiu-Jitsu. De
 - **Gestão de Aulas**: Criação e agendamento de aulas.
 - **Gestão de Turmas**: Criação de turmas e matrícula de alunos.
 - **Chamada**: Registro de presença rápido e intuitivo.
+- **Upload de Vídeos**: Upload de aulas gravadas com armazenamento em nuvem (Cloudflare R2).
 
 ### Portal do Aluno
 - **Dashboard**: Acompanhamento de progresso (graduação, presenças).

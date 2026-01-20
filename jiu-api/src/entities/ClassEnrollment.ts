@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn, Unique } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn, Unique, Index } from "typeorm";
 import { Class } from "./Class";
 import { User } from "./User";
 
@@ -13,6 +13,7 @@ export class ClassEnrollment {
     class: Class;
 
     @Column({ name: "class_id" })
+    @Index()
     classId: string;
 
     @ManyToOne(() => User, (user) => user.id, { onDelete: "CASCADE" })
@@ -20,6 +21,7 @@ export class ClassEnrollment {
     user: User;
 
     @Column({ name: "user_id" })
+    @Index()
     userId: string;
 
     @CreateDateColumn({ name: "enrolled_at" })

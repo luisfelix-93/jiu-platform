@@ -7,8 +7,10 @@ import { Calendar, CheckCircle2 } from 'lucide-react';
 import { useAuthStore } from '../../stores/useAuthStore';
 import { DashboardService, type DashboardData } from '../../services/dashboard.service';
 import { LessonService } from '../../services/lesson.service';
+import { ContentService } from '../../services/content.service';
 import { format, isToday, isAfter, parseISO, addMinutes } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { VideoPlayer } from '../../components/VideoPlayer';
 
 export const StudentHome = () => {
     const { user } = useAuthStore();
@@ -19,6 +21,7 @@ export const StudentHome = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [attendanceStatus, setAttendanceStatus] = useState<{ checkedIn: boolean; status?: string } | null>(null);
     const [isLoadingAttendance, setIsLoadingAttendance] = useState(false);
+    const [videoUrl, setVideoUrl] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchDashboard = async () => {
@@ -40,11 +43,21 @@ export const StudentHome = () => {
         setIsModalOpen(true);
         setAttendanceStatus(null);
         setIsLoadingAttendance(true);
+        setVideoUrl(null); // Reset video
+
         try {
-            const status = await LessonService.getAttendanceStatus(lesson.id);
+            const [status, content] = await Promise.all([
+                LessonService.getAttendanceStatus(lesson.id),
+                ContentService.getLessonContent(lesson.id)
+            ]);
             setAttendanceStatus(status);
+
+            const video = content.find(c => c.contentType === 'video' || c.contentType.startsWith('video/'));
+            if (video && video.fileUrl) {
+                setVideoUrl(video.fileUrl);
+            }
         } catch (error) {
-            console.error("Failed to fetch attendance status", error);
+            console.error("Failed to fetch details", error);
         } finally {
             setIsLoadingAttendance(false);
         }
@@ -143,6 +156,7 @@ export const StudentHome = () => {
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 title={selectedLesson?.class?.name || 'Detalhes da Aula'}
+                maxWidth="max-w-2xl"
             >
                 <div className="space-y-4">
                     <div>
@@ -165,6 +179,13 @@ export const StudentHome = () => {
                             {selectedLesson?.topic || "Nenhuma anotação disponível."}
                         </p>
                     </div>
+
+                    {videoUrl && (
+                        <div>
+                            <h4 className="text-sm font-semibold text-neutral-500 uppercase tracking-wider mb-2">Vídeo da Aula</h4>
+                            <VideoPlayer src={videoUrl} />
+                        </div>
+                    )}
 
                     <div className="pt-4 border-t flex justify-between items-center gap-2">
                         <Button variant="outline" onClick={() => setIsModalOpen(false)}>Fechar</Button>
