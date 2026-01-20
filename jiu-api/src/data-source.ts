@@ -31,8 +31,10 @@ export const AppDataSource = new DataSource({
     maxQueryExecutionTime: 1000,
     extra: {
         max: 20,
+        min: 2,
         idleTimeoutMillis: 30000,
-        connectionTimeoutMillis: 2000
+        connectionTimeoutMillis: 2000,
+        acquireTimeoutMillis: 60000
     },
     entities: [
         User,
