@@ -16,6 +16,8 @@ export const VideoPlayer = ({ src, title, onClose }: VideoPlayerProps) => {
                     size="sm"
                     className="absolute top-2 right-2 text-white bg-black/50 hover:bg-black/70 z-10 opacity-0 group-hover:opacity-100 transition-opacity"
                     onClick={onClose}
+                    type="button"
+                    aria-label="Fechar reprodutor de vídeo"
                 >
                     <X size={20} />
                 </Button>
