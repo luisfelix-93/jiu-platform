@@ -33,7 +33,7 @@ export const VideoPlayer = ({ src, title, onClose }: VideoPlayerProps) => {
                 autoPlay
                 controlsList="nodownload"
             >
-                <source src={src} type="video/mp4" />
+                <source src={src} />
                 Seu navegador não suporta a tag de vídeo.
             </video>
         </div>
