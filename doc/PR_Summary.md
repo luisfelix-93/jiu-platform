@@ -4,7 +4,7 @@
 
 Esta pull request implementa otimizações críticas de performance no banco de dados PostgreSQL da plataforma Jiu Platform, incluindo indexação estratégica de tabelas, configuração de connection pooling e monitoramento de queries lentas. O sistema agora suporta melhor carga de trabalho com consultas otimizadas para dashboards de professores, relatórios de frequência e navegação de conteúdo.
 
-Os commits `5a08fb8` ("criando índices para o banco de dados"), `c4abd99` ("performance banco de dados") e `74af5d3` ("correção") modificam **7 arquivos** no backend, criando **1 nova migration** de índices, configurando connection pooling TypeORM e implementando logging de performance para queries acima de 1000ms.
+Os commits `5a08fb8` ("criando índices para o banco de dados"), `c4abd99` ("performance banco de dados") e `74af5d3` ("correção") modificam **11 arquivos** (incluindo 6 arquivos de backend) e criam **2 novas migrations** de índices, configurando connection pooling TypeORM e implementando logging de performance para queries acima de 1000ms.
 
 ## Contexto
 
