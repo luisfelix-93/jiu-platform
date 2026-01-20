@@ -56,16 +56,17 @@ export class AuthController {
 
     private static setAuthCookies(res: Response, accessToken: string, refreshToken: string) {
         const isProd = process.env.NODE_ENV === "production";
+
         res.cookie("accessToken", accessToken, {
             httpOnly: true,
-            secure: isProd,
-            sameSite: "strict",
+            secure: isProd, // Required for SameSite=None
+            sameSite: isProd ? "none" : "lax", // Strict blocks redirects sometimes, Lax is good default for dev
             maxAge: 15 * 60 * 1000 // 15m
         });
         res.cookie("refreshToken", refreshToken, {
             httpOnly: true,
-            secure: isProd,
-            sameSite: "strict",
+            secure: isProd, // Required for SameSite=None
+            sameSite: isProd ? "none" : "lax", // Strict blocks redirects sometimes, Lax is good default for dev
             maxAge: 7 * 24 * 60 * 60 * 1000 // 7d
         });
     }
