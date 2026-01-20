@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn, Unique } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn, Unique, Index } from "typeorm";
 import { ScheduledLesson } from "./ScheduledLesson";
 import { User } from "./User";
 
@@ -13,6 +13,7 @@ export class Attendance {
     lesson: ScheduledLesson;
 
     @Column({ name: "lesson_id" })
+    @Index()
     lessonId: string;
 
     @ManyToOne(() => User, (user) => user.id, { onDelete: "CASCADE" })
@@ -20,9 +21,11 @@ export class Attendance {
     user: User;
 
     @Column({ name: "user_id" })
+    @Index()
     userId: string;
 
     @Column()
+    @Index()
     status: string; // present, absent, late, excused
 
     @Column({ name: "check_in_time", type: "timestamp", nullable: true })

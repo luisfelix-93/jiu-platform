@@ -27,7 +27,15 @@ export const AppDataSource = new DataSource({
     password: process.env.DB_PASSWORD || "postgres",
     database: process.env.DB_NAME || "jiujitsu",
     synchronize: !isProd,
-    logging: false,
+    logging: isProd ? ["error", "warn", "schema", "migration"] : ["query", "error", "warn", "schema"],
+    maxQueryExecutionTime: 1000,
+    extra: {
+        max: 20,
+        min: 2,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 2000,
+        acquireTimeoutMillis: 60000
+    },
     entities: [
         User,
         Academy,

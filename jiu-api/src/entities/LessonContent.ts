@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn, Index } from "typeorm";
 import { ScheduledLesson } from "./ScheduledLesson";
 import { User } from "./User";
 
@@ -12,6 +12,7 @@ export class LessonContent {
     lesson: ScheduledLesson;
 
     @Column({ name: "lesson_id" })
+    @Index()
     lessonId: string;
 
     @Column()

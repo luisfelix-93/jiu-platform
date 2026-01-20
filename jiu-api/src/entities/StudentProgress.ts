@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, UpdateDateColumn, ManyToOne, JoinColumn } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, UpdateDateColumn, ManyToOne, JoinColumn, Index } from "typeorm";
 import { User } from "./User";
 
 @Entity("student_progress")
@@ -11,6 +11,7 @@ export class StudentProgress {
     student: User;
 
     @Column({ name: "student_id" })
+    @Index()
     studentId: string;
 
     @Column({ name: "skill_name" })
