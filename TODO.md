@@ -40,5 +40,5 @@ Derived from `doc/performance_specs.md`.
 - [ ] **Pagination - ContentService**
     - Refatorar `ContentService` para paginar conteúdos.
 
-- [ ] **Slow Query Logging**
+- [x] **Slow Query Logging**
     - Configurar `data-source.ts` para logar queries que demoram mais de 1000ms.
