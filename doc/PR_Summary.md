@@ -1,140 +1,142 @@
-# PR: Melhorias de Vídeo - Upload e Armazenamento na Nuvem (Backend)
+# PR: VideoPlayer - Componente de Reprodução de Vídeo (Frontend)
 
 ## Visão Geral
-Esta pull request implementa as funcionalidades de upload e armazenamento de vídeos na plataforma Jiu Platform, estabelecendo a base para conteúdo multimídia escalável. A solução utiliza Cloudflare R2 como serviço de armazenamento S3-compatible, permitindo upload direto de vídeos pelo frontend com URLs assinadas para segurança, e acesso público via CDN global.
+Esta pull request implementa um componente completo de reprodução de vídeo no frontend da plataforma Jiu Platform, incluindo player integrado, modal aprimorado e funcionalidades de visualização de aulas gravadas. O sistema permite que professores e alunos assistam a vídeos didáticos diretamente na interface, com controles nativos do navegador e design responsivo.
 
-O commit `6e0f9f6` ("20260119 - configuração de envio de mídia") modifica **10 arquivos** na branch atual, introduzindo **2 novos serviços especializados em vídeo** e **1 novo endpoint de API** para geração de URLs de upload. As mudanças focam na integração completa com Cloudflare R2, incluindo configuração de CORS e estruturação de arquivos por lições.
+O commit `c25fa45` ("20260119 - videoplayer") modifica **6 arquivos** no frontend, introduzindo **1 novo componente VideoPlayer**, melhorando o **componente Modal** e integrando a reprodução de vídeo nas páginas de professor e estudante.
 
 ## Contexto
-As aulas de Jiu-Jitsu requerem demonstrações visuais de técnicas através de vídeos didáticos. A implementação anterior era limitada ao armazenamento local/mock, incapaz de suportar volumes maiores ou distribuição global. Esta atualização estabelece uma arquitetura de vídeo escalável com:
+A plataforma de Jiu-Jitsu necessita de visualização de conteúdo de vídeo para aulas gravadas e materiais didáticos. A implementação anterior não possuía player de vídeo integrado, limitando a experiência do usuário. Esta atualização introduz um sistema de vídeo completo com:
 
-- **Armazenamento otimizado**: Cloudflare R2 com custos competitivos por GB armazenado
-- **Distribuição global**: CDN integrada para streaming de vídeo de baixa latência
-- **Segurança avançada**: URLs pré-assinadas com expiração automática (1 hora)
-- **Organização estruturada**: Vídeos categorizados por aulas e biblioteca geral
+- **Player nativo HTML5**: Suporte completo aos controles padrão do navegador
+- **Design responsivo**: Aspect ratio 16:9 otimizado para diferentes dispositivos
+- **Modal integrado**: Visualização em tela cheia com backdrop escuro
+- **Controles de segurança**: Desabilitação de download para proteção de conteúdo
+- **Experiência imersiva**: Título sobreposto e botão de fechar elegante
 
 ## Mudanças Implementadas
 
-### 1. Serviço de Armazenamento de Vídeo (StorageService)
-Novo arquivo `jiu-api/src/services/StorageService.ts` implementa arquitetura completa para vídeo:
+### 1. Componente VideoPlayer
+Novo arquivo `jiu-app/src/components/VideoPlayer.tsx` implementa player completo:
 
-- **Cliente S3 otimizado para R2**: Configurado com endpoint Cloudflare (`https://${accountId}.r2.cloudflarestorage.com`) para compatibilidade S3
-- **Gerenciamento de credenciais**: Variáveis de ambiente seguras (`R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`, `R2_PUBLIC_URL`)
-- **URLs pré-assinadas para vídeo**: Método `getUploadUrl()` gera URLs válidas por 1 hora para uploads diretos de arquivos grandes (vídeos)
-- **URLs públicas para streaming**: Método `getPublicUrl()` retorna links CDN para reprodução de vídeo
-- **Estrutura hierárquica**: Vídeos organizados como `lessons/{lessonId}/{timestamp}-{filename}` para navegação eficiente
+- **Interface TypeScript**: Props `src`, `title`, `onClose` com tipagem forte
+- **Controles nativos**: `controls`, `autoPlay`, `controlsList="nodownload"` para UX otimizada
+- **Design elegante**: Fundo preto, cantos arredondados, overflow hidden
+- **Título sobreposto**: Gradiente escuro no topo com drop shadow para legibilidade
+- **Botão de fechar**: Ícone X posicionado no canto superior direito, visível no hover
+- **Aspect ratio fixo**: `aspect-video` (16:9) para consistência visual
+- **Fallback acessível**: Mensagem para navegadores sem suporte a vídeo
 
-### 2. Lógica de Vídeo no ContentService
-Atualização de `jiu-api/src/services/ContentService.ts` com funcionalidades específicas para vídeo:
+### 2. Modal Aprimorado
+Atualização de `jiu-app/src/components/ui/Modal.tsx` com melhor design:
 
-- **Método `generateUploadUrl` otimizado**: Processa `fileName` (incluindo extensões .mp4, .mov), `contentType` (video/mp4, etc.), e `lessonId` opcional
-- **Sanitização robusta**: Remove caracteres especiais e normaliza nomes de arquivo para URLs seguras
-- **Integração StorageService**: Gera simultaneamente upload URL assinada e public URL para vídeo
-- **Categorização por aula**: Vídeos associados a lições específicas ou armazenados na biblioteca geral de técnicas
+- **Layout flexbox**: Alinhamento horizontal do título e botão fechar
+- **Transições suaves**: Animações de entrada/saída com Tailwind CSS
+- **Backdrop blur**: Efeito de desfoque no fundo para foco no conteúdo
+- **Z-index hierárquico**: Modal com `z-50` para sobrepor outros elementos
+- **Botão padrão**: Adição de botão "Fechar" no rodapé para acessibilidade
 
-### 3. API Endpoint para Upload de Vídeo
-Nova funcionalidade em `jiu-api/src/controllers/ContentController.ts`:
+### 3. Integração nas Páginas
+Integração do VideoPlayer nas páginas principais:
 
-- **Endpoint `getUploadUrl`**: POST `/api/content/upload-url` dedicado a uploads de vídeo
-- **Validação de tipos**: Verifica `fileName` e `contentType` obrigatórios, com suporte a tipos MIME de vídeo
-- **Resposta otimizada**: Retorna `{ uploadUrl, publicUrl, key }` para upload direto do cliente
-- **Autenticação integrada**: Valida token JWT do professor via `(req as any).user.userId`
-
-### 4. Configuração CORS para Vídeo
-Script dedicado `jiu-api/scripts/configure-cors.ts` para buckets de vídeo:
-
-- **Configuração automatizada**: Script TypeScript para setup de CORS em buckets R2
-- **Regras de desenvolvimento**: Permite origens localhost para testes de upload de vídeo
-- **Métodos de vídeo**: PUT, POST, GET, HEAD, DELETE otimizados para streaming
-- **Headers de vídeo**: ETag exposto para validação de integridade de arquivos grandes
-- **Cache de 3000s**: Configurações persistentes para sessões de upload
-
-### 5. Infraestrutura e Dependências para Vídeo
-- **SDK AWS otimizado**: `@aws-sdk/client-s3@^3.971.0` e `@aws-sdk/s3-request-presigner@^3.971.0` para operações S3/R2 de vídeo
-- **Documentação técnica**: Atualização de `jiu-api/docs/API_REFERENCE.md` com especificações de upload de vídeo
-- **Especificações de arquitetura**: `jiu-api/docs/project_specs.md` atualizado com fluxo de vídeo
-- **README com setup**: Instruções detalhadas para configuração de ambiente R2 para vídeo
+- **ProfessorLessons**: Visualização de vídeos de aulas gravadas com botão play
+- **StudentHome**: Acesso a vídeos de aulas para alunos
+- **StudentCalendar**: Reprodução de vídeos de aulas agendadas
+- **Estado de vídeo**: `selectedVideo` state para gerenciar vídeo atual
+- **Modal de vídeo**: `isVideoModalOpen` para controle de exibição
 
 ## Arquivos Modificados
 
 | Caminho | Alterações Realizadas | Impacto |
 |---------|----------------------|---------|
-| `jiu-api/src/services/StorageService.ts` (novo) | Serviço de armazenamento otimizado para vídeo com R2, URLs assinadas e estrutura hierárquica. | Base para upload e streaming de vídeos escalável. |
-| `jiu-api/src/services/ContentService.ts` | Novo método `generateUploadUrl` com validação de tipos MIME de vídeo e sanitização. | Lógica de negócio para gerenciamento de vídeos por aula. |
-| `jiu-api/src/controllers/ContentController.ts` | Método `getUploadUrl` com validação de contentType para vídeo. | Controller REST para geração de URLs de upload de vídeo. |
-| `jiu-api/src/routes/content.routes.ts` | Rota `POST /upload-url` para integração de vídeo. | Exposição da API de vídeo no sistema de rotas. |
-| `jiu-api/scripts/configure-cors.ts` (novo) | Script de configuração CORS otimizado para uploads de vídeo grandes. | Setup automatizado para buckets de vídeo em R2. |
-| `jiu-api/scripts/configure-cors.js` (novo) | Executável Node.js para configuração CORS de vídeo. | Ferramenta de linha de comando para setup rápido. |
-| `jiu-api/package.json` | Dependências AWS SDK v3 para operações S3/R2 de vídeo. | Suporte técnico para integração de armazenamento de vídeo. |
-| `jiu-api/README.md` | Configuração R2 detalhada com variáveis para vídeo. | Guia de setup para desenvolvedores de vídeo. |
-| `jiu-api/docs/API_REFERENCE.md` | Especificações completas do endpoint de upload de vídeo. | Documentação técnica da API de vídeo. |
-| `jiu-api/docs/project_specs.md` | Arquitetura atualizada com fluxo de vídeo end-to-end. | Especificações técnicas da infraestrutura de vídeo. |
+| `jiu-app/src/components/VideoPlayer.tsx` (novo) | Componente completo de player de vídeo com controles nativos, título sobreposto e botão fechar. | Player de vídeo reutilizável com design profissional. |
+| `jiu-app/src/components/ui/Modal.tsx` | Melhoria no layout com flexbox, backdrop blur, transições e botão fechar padrão. | Modal mais elegante e acessível para todas as funcionalidades. |
+| `jiu-app/src/pages/professor/ProfessorLessons.tsx` | Integração do VideoPlayer com estado de vídeo selecionado e modal. | Professores podem assistir vídeos de aulas diretamente na interface. |
+| `jiu-app/src/pages/student/StudentHome.tsx` | Adição de funcionalidade de reprodução de vídeo para alunos. | Alunos acessam conteúdo de vídeo das aulas. |
+| `jiu-app/src/pages/student/StudentCalendar.tsx` | Integração de player de vídeo no calendário de aulas. | Visualização de vídeos de aulas agendadas. |
+| `doc/PR_Summary.md` | Documentação técnica completa do sistema de vídeo implementado. | Registro detalhado das mudanças para manutenção futura. |
 
-## Configuração Necessária
+## Configuração Técnica Detalhada
 
-### Variáveis de Ambiente R2
-```env
-R2_ACCOUNT_ID=seu_account_id_cloudflare
-R2_ACCESS_KEY_ID=seu_access_key
-R2_SECRET_ACCESS_KEY=seu_secret_key
-R2_BUCKET_NAME=jiu-platform-videos
-R2_PUBLIC_URL=https://seu-dominio.com  # Opcional, para CDN customizada
+### VideoPlayer Component Props
+```typescript
+interface VideoPlayerProps {
+    src: string;        // URL do vídeo (R2 ou externo)
+    title?: string;     // Título opcional sobreposto
+    onClose?: () => void; // Callback para fechar modal
+}
 ```
 
-### Configuração CORS
-Execute o script após configurar credenciais:
-```bash
-cd jiu-api && npx ts-node scripts/configure-cors.ts
+### Uso do Componente
+```tsx
+<VideoPlayer 
+    src="https://cdn.example.com/video.mp4"
+    title="Guarda Básica"
+/>
 ```
 
-## Impacto no Sistema de Vídeo
+### Integração com Modal
+```tsx
+<Modal 
+    isOpen={isVideoModalOpen} 
+    onClose={() => setIsVideoModalOpen(false)}
+    title="Assistir Aula"
+    maxWidth="max-w-4xl"
+>
+    <VideoPlayer 
+        src={selectedVideo.url} 
+        title={selectedVideo.title}
+        onClose={() => setIsVideoModalOpen(false)}
+    />
+</Modal>
+```
 
-### Para Desenvolvedores de Vídeo
-- **Upload direto de vídeo**: Frontend pode fazer upload de arquivos grandes (.mp4, .mov) diretamente para R2, reduzindo latência e carga no servidor
-- **URLs assinadas para vídeo**: Segurança avançada com expiração automática de 1 hora para proteção de conteúdo
-- **Organização hierárquica**: Vídeos automaticamente categorizados por aula ou biblioteca de técnicas
-- **Escalabilidade de vídeo**: Infraestrutura preparada para volumes altos de conteúdo multimídia
+## Impacto no Sistema
 
-### Para Professores (Usuários Finais)
-- **Upload de vídeos didáticos**: Capacidade de enviar demonstrações de técnicas Jiu-Jitsu diretamente para aulas
-- **Biblioteca de vídeo organizada**: Acesso estruturado a vídeos por lição, facilitando reutilização de conteúdo
-- **Integração futura**: Base para implementação de drag-and-drop e preview de vídeo no frontend
-- **Distribuição global**: Vídeos acessíveis com baixa latência via CDN Cloudflare
+### Para Desenvolvedores
+- **Componente reutilizável**: VideoPlayer pode ser usado em qualquer página
+- **Integração headless**: Funciona com qualquer fonte de vídeo (local, CDN, R2)
+- **TypeScript seguro**: Tipagem completa previne erros de runtime
+- **Design system**: Segue padrões Tailwind CSS da plataforma
 
-### Para Infraestrutura de Vídeo
-- **Custos otimizados**: R2 com preços competitivos por GB de vídeo armazenado e transferido
-- **Performance de streaming**: CDN global para reprodução de vídeo de alta qualidade
-- **Segurança de conteúdo**: URLs pré-assinadas previnem acesso não autorizado a vídeos
-- **Persistência**: Vídeos armazenados permanentemente na nuvem (vs armazenamento temporário local)
+### Para Professores
+- **Visualização de aulas**: Assistir gravações de aulas diretamente na plataforma
+- **Experiência imersiva**: Player em tela cheia com controles completos
+- **Sem downloads**: Proteção de conteúdo com `controlsList="nodownload"`
 
-## Fluxo de Upload de Vídeo Implementado
+### Para Alunos
+- **Acesso a conteúdo**: Vídeos de aulas disponíveis no dashboard e calendário
+- **Aprendizado visual**: Demonstrações de técnicas em vídeo de alta qualidade
+- **Navegação intuitiva**: Botão play integrado nas listas de aulas
 
-1. **Professor solicita URL de upload**: Frontend faz POST `/api/content/upload-url` com `fileName: "guard.mp4"`, `contentType: "video/mp4"`, `lessonId: "123"`
-2. **API gera URLs assinadas**: StorageService cria upload URL (válida 1h) e public URL para vídeo
-3. **Frontend faz upload direto**: PUT do arquivo de vídeo para URL assinada em R2 (streaming direto)
-4. **Professor registra vídeo**: POST `/api/content/upload` com `fileUrl` (URL pública) para persistir metadados
-5. **Vídeo disponível para alunos**: Acesso público via CDN para streaming e download
+## Fluxo de Reprodução de Vídeo
 
-## Testes Realizados para Vídeo
-- **Build TypeScript**: `npm run build` validado com todas as dependências de vídeo
-- **Compatibilidade AWS SDK v3**: Verificação de integração R2 para operações de vídeo
-- **Configuração CORS**: Script testado manualmente para buckets de vídeo
-- **Estrutura de URLs de vídeo**: Validação de organização `lessons/{lessonId}/{timestamp}-{filename}` para vídeos
-- **Geração de URLs assinadas**: Teste de expiração automática (1 hora) para uploads de vídeo
+1. **Usuário clica em vídeo**: Botão play em aula gravada na lista
+2. **Estado atualizado**: `setSelectedVideo({ url, title })` armazena vídeo
+3. **Modal abre**: `setIsVideoModalOpen(true)` exibe player
+4. **Vídeo carrega**: HTML5 video element carrega fonte automaticamente
+5. **Reprodução**: Controles nativos permitem play/pause, volume, fullscreen
+6. **Fechamento**: Botão X ou click fora fecha modal e limpa estado
 
-## Próximos Passos para Vídeo
-1. **Integração frontend de vídeo**: Implementar componente de upload com drag-and-drop e preview
-2. **Validação avançada de vídeo**: Verificar tipos MIME (mp4, mov, avi), tamanhos máximos e codecs
-3. **Compressão e otimização**: Adicionar processamento FFmpeg para transcoding e redução de bitrate
-4. **Streaming adaptativo**: Implementar HLS/DASH para qualidade variável baseada em conexão
-5. **CDN customizado**: Configurar domínio próprio no R2 para branding da plataforma
-6. **Analytics de vídeo**: Monitorar visualizações, tempo de reprodução e engajamento
-7. **Limpeza automática**: Sistema para remover vídeos não utilizados ou expirados
-8. **Backup e replicação**: Estratégia de redundância para vídeos críticos
+## Testes Realizados
+- **Renderização**: VideoPlayer exibe corretamente em diferentes tamanhos
+- **Controles funcionais**: Play, pause, volume, seek bar testados
+- **Responsividade**: Aspect ratio mantido em mobile/desktop
+- **Acessibilidade**: Botão fechar visível no hover, títulos legíveis
+- **Integração modal**: VideoPlayer funciona dentro do Modal aprimorado
 
-## Referências Técnicas para Vídeo
-- [Cloudflare R2 para Vídeo](https://developers.cloudflare.com/r2/get-started/)
-- [AWS SDK S3 Client v3](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-s3/)
-- [Pre-signed URLs para Upload](https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-presigned-url.html)
-- [MIME Types para Vídeo](https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types#video_types)
-- [HLS Streaming Protocol](https://developer.apple.com/streaming/)
+## Próximos Passos
+1. **Loading states**: Spinner durante carregamento de vídeo
+2. **Error handling**: Tratamento de vídeos corrompidos ou indisponíveis
+3. **Progress tracking**: Salvar posição de reprodução no backend
+4. **Playlist**: Reprodução sequencial de múltiplos vídeos
+5. **Subtítulos**: Suporte a legendas para acessibilidade
+6. **Qualidade adaptativa**: Múltiplas resoluções baseadas em conexão
+7. **Analytics**: Tracking de visualizações e engajamento
+
+## Referências Técnicas
+- [HTML5 Video Element](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/video)
+- [Video Controls Attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/video#attributes)
+- [Tailwind CSS Aspect Ratio](https://tailwindcss.com/docs/aspect-ratio)
+- [Headless UI Modal](https://headlessui.com/react/dialog)</content>
+<parameter name="filePath">/mnt/c/Users/luisf/source/repos/dev/jiu-platform/doc/PR_Summary.md
