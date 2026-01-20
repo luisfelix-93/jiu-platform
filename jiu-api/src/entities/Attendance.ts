@@ -25,6 +25,7 @@ export class Attendance {
     userId: string;
 
     @Column()
+    @Index()
     status: string; // present, absent, late, excused
 
     @Column({ name: "check_in_time", type: "timestamp", nullable: true })

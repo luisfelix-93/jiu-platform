@@ -48,6 +48,7 @@ logs/
 
 # Documentation
 doc/*_specs.md
+code_review.md
 
 #Scripts
 jiu-api/src/scripts 

@@ -42,3 +42,6 @@ Derived from `doc/performance_specs.md`.
 
 - [x] **Slow Query Logging**
     - Configurar `data-source.ts` para logar queries que demoram mais de 1000ms.
+
+- [x] **Connection Pooling**
+    - Configurar `extra.max` em `data-source.ts` (implementado).

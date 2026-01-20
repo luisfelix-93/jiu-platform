@@ -6,6 +6,7 @@ import { LessonContent } from "./LessonContent";
 
 @Entity("scheduled_lessons")
 @Unique(["classId", "date", "startTime"])
+@Index(["professorId", "date"])
 export class ScheduledLesson {
     @PrimaryGeneratedColumn("uuid")
     id: string;
