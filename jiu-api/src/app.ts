@@ -31,15 +31,16 @@ app.use(cors({
     credentials: true,
 }));
 app.use(cookieParser());
+const isProd = process.env.NODE_ENV === "production";
 app.use(helmet({
     contentSecurityPolicy: false, // API não serve HTML, CSP não necessário
     referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
     xPermittedCrossDomainPolicies: { permittedPolicies: 'none' },
-    strictTransportSecurity: {
+    strictTransportSecurity: isProd ? {
         maxAge: 31536000,
         includeSubDomains: true,
         preload: true
-    },
+    } : false,
     xFrameOptions: { action: 'deny' }
 }));
 
