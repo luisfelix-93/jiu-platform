@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn, Unique, OneToMany } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn, Unique, OneToMany, Index } from "typeorm";
 import { Class } from "./Class";
 import { User } from "./User";
 import { Attendance } from "./Attendance";
@@ -14,10 +14,12 @@ export class ScheduledLesson {
     @JoinColumn({ name: "class_id" })
     class: Class;
 
+    @Index()
     @Column({ name: "class_id" })
     classId: string;
 
     @Column({ type: "date" })
+    @Index()
     date: string;
 
     @Column({ name: "start_time", type: "time" })
@@ -31,6 +33,7 @@ export class ScheduledLesson {
     professor: User;
 
     @Column({ name: "professor_id", nullable: true })
+    @Index()
     professorId: string;
 
     @Column({ nullable: true })

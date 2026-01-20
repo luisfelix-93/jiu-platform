@@ -47,7 +47,7 @@ yarn-error.log*
 logs/
 
 # Documentation
-doc/security_specs.md
+doc/*_specs.md
 
 #Scripts
 jiu-api/src/scripts 

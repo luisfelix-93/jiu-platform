@@ -187,4 +187,3 @@ const handleWatchVideo = (content: any) => {
 - [Video Controls Attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/video#attributes)
 - [Tailwind CSS Aspect Ratio](https://tailwindcss.com/docs/aspect-ratio)
 - [Headless UI Modal](https://headlessui.com/react/dialog)</content>
-<parameter name="filePath">/mnt/c/Users/luisf/source/repos/dev/jiu-platform/doc/PR_Summary.md
