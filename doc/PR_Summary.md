@@ -101,22 +101,33 @@ export const AppDataSource = new DataSource({
 ### Índices Implementados
 
 ```sql
--- ScheduledLesson (4 índices)
+-- ScheduledLesson (4 índices - migration 1768912728034)
 CREATE INDEX IF NOT EXISTS "IDX_ScheduledLesson_ClassId" ON "scheduled_lessons" ("class_id");
 CREATE INDEX IF NOT EXISTS "IDX_ScheduledLesson_ProfessorId" ON "scheduled_lessons" ("professor_id");
 CREATE INDEX IF NOT EXISTS "IDX_ScheduledLesson_Date" ON "scheduled_lessons" ("date");
 CREATE INDEX IF NOT EXISTS "IDX_ScheduledLesson_ClassDate" ON "scheduled_lessons" ("class_id", "date");
 
--- Attendance (2 índices)
+-- Attendance (2 índices - migration 1768912728034)
 CREATE INDEX IF NOT EXISTS "IDX_Attendance_LessonId" ON "attendances" ("lesson_id");
 CREATE INDEX IF NOT EXISTS "IDX_Attendance_UserId" ON "attendances" ("user_id");
 
--- ClassEnrollment (2 índices)
+-- ClassEnrollment (2 índices - migration 1768912728034)
 CREATE INDEX IF NOT EXISTS "IDX_ClassEnrollment_ClassId" ON "class_enrollments" ("class_id");
 CREATE INDEX IF NOT EXISTS "IDX_ClassEnrollment_UserId" ON "class_enrollments" ("user_id");
 
--- LessonContent (1 índice)
+-- LessonContent (1 índice - migration 1768912728034)
 CREATE INDEX IF NOT EXISTS "IDX_LessonContent_LessonId" ON "lesson_content" ("lesson_id");
+
+-- ScheduledLesson (1 índice adicional - migration 1768914748062, índice parcial)
+CREATE INDEX IF NOT EXISTS "IDX_ScheduledLesson_ProfessorDate"
+    ON "scheduled_lessons" ("professor_id", "date")
+    WHERE "professor_id" IS NOT NULL;
+
+-- Attendance (1 índice adicional - migration 1768914748062)
+CREATE INDEX IF NOT EXISTS "IDX_Attendance_Status" ON "attendances" ("status");
+
+-- StudentProgress (1 índice - migration 1768914748062)
+CREATE INDEX IF NOT EXISTS "IDX_StudentProgress_UserId" ON "student_progress" ("user_id");
 ```
 
 ### Connection Pool Configuration
