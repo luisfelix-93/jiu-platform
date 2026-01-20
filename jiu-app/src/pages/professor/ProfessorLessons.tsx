@@ -349,7 +349,7 @@ export const ProfessorLessons = () => {
                     setSelectedVideo(null);
                 }}
                 title={selectedVideo?.title || 'Assistir Aula'}
-                maxWidth="4xl"
+                maxWidth="max-w-4xl"
             >
                 {selectedVideo ? (
                     <VideoPlayer src={selectedVideo.url} />
