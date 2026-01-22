@@ -881,6 +881,99 @@
                     "response": []
                 }
             ]
+        },
+        {
+            "name": "Graduation",
+            "item": [
+                {
+                    "name": "Get Graduation Progress (Prof/Admin)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/graduation/progress/:userId",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "graduation",
+                                "progress",
+                                ":userId"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "userId",
+                                    "value": "student-uuid"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Update Student Belt (Prof/Admin)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"userId\": \"student-uuid\",\n  \"newBelt\": \"azul\",\n  \"promotionDate\": \"2026-01-15\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/graduation/update-belt",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "graduation",
+                                "update-belt"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Graduation Goals",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/graduation/goals",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "graduation",
+                                "goals"
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
         }
     ],
     "variable": [

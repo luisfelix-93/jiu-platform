@@ -219,6 +219,12 @@ GET    /api/dashboard/aluno    # Dados para dashboard do aluno
 GET    /api/dashboard/professor # Dados para dashboard do professor
 GET    /api/dashboard/admin    # Dados para dashboard admin
 ```
+### 4.8 Graduação
+```text
+GET    /api/graduation/progress/:userId # Progresso de graduação do aluno (professor/admin)
+POST   /api/graduation/update-belt      # Atualizar faixa do aluno (professor/admin)
+GET    /api/graduation/goals            # Metas de graduação por faixa
+```
 ## 5. Autenticação
 ### 5.1 Fluxo JWT
 ```typescript
@@ -366,6 +372,71 @@ class ContentService {
   }
 }
 ```
+
+### 7.4 Sistema de Graduação
+```typescript
+class GraduationService {
+  async calculateProgress(userId: string): Promise<GraduationProgress> {
+    // 1. Obter dados do aluno (faixa atual, data de ingresso)
+    // 2. Calcular aulas assistidas no período atual
+    // 3. Verificar tempo mínimo desde última graduação
+    // 4. Retornar progresso e elegibilidade para promoção
+  }
+
+  async promoteStudent(userId: string, newBelt: string, professorId: string): Promise<void> {
+    // 1. Validar permissões do professor
+    // 2. Verificar elegibilidade do aluno
+    // 3. Atualizar faixa e data no perfil
+    // 4. Registrar promoção no histórico
+    // 5. Notificar aluno (futuro)
+  }
+
+  async getGraduationGoals(): Promise<GraduationGoal[]> {
+    // Retornar metas padrão de graduação por faixa
+    return [
+      { belt: 'branca', minTime: 90, minLessons: 30 },
+      { belt: 'azul', minTime: 180, minLessons: 60 },
+      { belt: 'roxa', minTime: 365, minLessons: 100 },
+      { belt: 'marrom', minTime: 730, minLessons: 150 },
+      { belt: 'preta', minTime: 1095, minLessons: 200 }
+    ];
+  }
+}
+```
+
+### 7.5 Regras de Graduação
+```typescript
+interface GraduationRules {
+  // Tempo mínimo em dias desde a última graduação
+  timeRequirements: Record<string, number> = {
+    'branca': 90,   // 3 meses
+    'azul': 180,    // 6 meses
+    'roxa': 365,    // 1 ano
+    'marrom': 730,  // 2 anos
+    'preta': 1095   // 3 anos
+  };
+
+  // Aulas mínimas necessárias no período
+  lessonRequirements: Record<string, number> = {
+    'branca': 30,
+    'azul': 60,
+    'roxa': 100,
+    'marrom': 150,
+    'preta': 200
+  };
+
+  // Faixas disponíveis
+  belts: string[] = ['branca', 'azul', 'roxa', 'marrom', 'preta'];
+
+  // Calcular progresso baseado em frequência
+  calculateProgress(attendanceRate: number, requiredLessons: number, attendedLessons: number): number {
+    const lessonProgress = Math.min(attendedLessons / requiredLessons, 1);
+    const frequencyBonus = attendanceRate >= 0.8 ? 1.1 : 1.0; // Bônus para frequência >= 80%
+    return Math.min(lessonProgress * frequencyBonus, 1) * 100;
+  }
+}
+```
+
 ## 8. Segurança
 ### 8.1 Medidas de Segurança
 ```yaml

@@ -50,6 +50,8 @@ RF-014: Upload de conteúdo por aula (vídeo + anotações)
 RF-015: Acompanhamento individual de alunos
 RF-016: Anotações privadas sobre alunos
 RF-017: Finalização de aula (salva presença + conteúdo)
+RF-018: Gestão de graduações (visualizar progresso, promover alunos)
+RF-019: Histórico de graduações por aluno
 ```
 
 ### 2.4. Sistema de Aulas
@@ -229,7 +231,21 @@ interface User {
   name: string;
   role: 'aluno' | 'professor';
   belt: BeltColor;
+  beltDate?: Date;
+  graduationGoal?: string;
+  birthDate?: Date;
   avatar?: string;
+}
+
+interface GraduationProgress {
+  currentBelt: string;
+  nextBelt: string;
+  lessonsAttended: number;
+  requiredLessons: number;
+  timeSinceLastPromotion: number;
+  minimumTimeRequired: number;
+  progressPercentage: number;
+  canPromote: boolean;
 }
 
 interface Class {
@@ -279,6 +295,11 @@ const mockAPI = {
   '/api/professor/turmas': { method: 'GET', returns: { classes: [] } },
   '/api/professor/aula/:classId/students': { method: 'GET', returns: { students: [] } },
   '/api/professor/aula/:classId/attendance': { method: 'POST', returns: { success: true } },
-  '/api/professor/aula/:classId/content': { method: 'POST', returns: { success: true } },
+   '/api/professor/aula/:classId/content': { method: 'POST', returns: { success: true } },
+
+   // Graduação
+   '/api/graduation/progress/:userId': { method: 'GET', returns: { graduationProgress } },
+   '/api/graduation/update-belt': { method: 'POST', returns: { success: true } },
+   '/api/graduation/goals': { method: 'GET', returns: { goals: [] } },
 };
 ```
