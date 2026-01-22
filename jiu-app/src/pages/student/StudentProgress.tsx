@@ -27,10 +27,17 @@ export const StudentProgress = () => {
     }, []);
 
     if (isLoading) {
-        return <div className="p-8 text-center">Carregando progresso...</div>;
+        return <div className="p-8 text-center text-neutral-500">Carregando progresso...</div>;
     }
 
-    const beltColor = user?.beltColor || 'Branca';
+    const { beltColor, stripeCount, nextGoal, remaining } = stats?.graduation || {
+        beltColor: user?.beltColor || 'white',
+        stripeCount: user?.stripeCount || 0,
+        nextGoal: 0,
+        remaining: 0
+    };
+
+    const progress = nextGoal > 0 ? Math.min(100, Math.max(0, ((nextGoal - remaining) / nextGoal) * 100)) : 0;
 
     return (
         <div className="space-y-6">
@@ -46,13 +53,28 @@ export const StudentProgress = () => {
                         <p className="text-neutral-400 text-sm uppercase tracking-wider mb-1">Graduação Atual</p>
                         <h3 className="text-3xl font-bold capitalize">{beltColor} Belt</h3>
                         <p className="text-sm text-neutral-400 mt-2">
-                            {user?.stripeCount ? `${user.stripeCount} Grau(s)` : 'Sem graus'}
+                            {stripeCount ? `${stripeCount} Grau(s)` : 'Sem graus'}
                         </p>
                     </div>
                     <div className="h-16 w-16 bg-white/10 rounded-full flex items-center justify-center">
-                        <Trophy className="h-8 w-8 text-yellow-400" />
+                        <Trophy className="h-8 w-8 text-yellow-500" />
                     </div>
                 </CardContent>
+                {nextGoal > 0 && (
+                    <div className="bg-neutral-800 px-6 pb-6 pt-0">
+                        <div className="flex justify-between text-xs text-neutral-400 mb-2">
+                            <span>Progresso para a próxima graduação</span>
+                            <span>{nextGoal - remaining} / {nextGoal} Aulas</span>
+                        </div>
+                        <div className="h-2 bg-neutral-700 rounded-full overflow-hidden">
+                            <div
+                                className="h-full bg-yellow-500 transition-all duration-1000 ease-out"
+                                style={{ width: `${progress}%` }}
+                            />
+                        </div>
+                        <p className="text-xs text-neutral-500 mt-2 text-right">Faltam {remaining} aulas</p>
+                    </div>
+                )}
             </Card>
 
             <div className="grid md:grid-cols-3 gap-6">

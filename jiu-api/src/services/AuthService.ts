@@ -15,6 +15,7 @@ const registerSchema = z.object({
     name: z.string().min(2),
     role: z.nativeEnum(UserRole),
     beltColor: z.string().optional(),
+    birthDate: z.string().optional().or(z.date()), // Accepts ISO string or Date object
 });
 
 export class AuthService {
@@ -34,6 +35,7 @@ export class AuthService {
             name: validatedData.name,
             role: validatedData.role,
             beltColor: validatedData.beltColor,
+            birthDate: validatedData.birthDate ? new Date(validatedData.birthDate) : undefined,
         });
 
         await userRepository.save(user);

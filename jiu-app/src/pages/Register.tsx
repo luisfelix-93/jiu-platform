@@ -14,6 +14,7 @@ const registerSchema = z.object({
     password: z.string().min(6, 'Senha deve ter no mínimo 6 caracteres'),
     role: z.enum(["aluno", "professor"]),
     beltColor: z.string().optional(),
+    birthDate: z.string().optional(),
 });
 
 type RegisterSchema = z.infer<typeof registerSchema>;
@@ -137,6 +138,13 @@ export const Register = () => {
                             ))}
                         </select>
                     </div>
+
+                    <Input
+                        label="Data de Nascimento"
+                        type="date"
+                        error={errors.birthDate?.message}
+                        {...register('birthDate')}
+                    />
 
                     <Button type="submit" className="w-full" isLoading={isLoading}>
                         Cadastrar

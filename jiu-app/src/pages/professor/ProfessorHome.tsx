@@ -36,7 +36,7 @@ export const ProfessorHome = () => {
     return (
         <div className="space-y-6">
             <header className="mb-8">
-                <h1 className="text-3xl font-bold text-neutral-800">Olá, Mestre {user?.name?.split(' ')[0]}!</h1>
+                <h1 className="text-3xl font-bold text-neutral-800">Olá, Professor {user?.name?.split(' ')[0]}!</h1>
                 <p className="text-neutral-500">Você tem {todayLessons.length} aulas hoje.</p>
             </header>
 
