@@ -13,9 +13,25 @@ const registerSchema = z.object({
     email: z.string().email('Email inválido'),
     password: z.string().min(6, 'Senha deve ter no mínimo 6 caracteres'),
     role: z.enum(["aluno", "professor"]),
+    beltColor: z.string().optional(),
+    birthDate: z.string().optional(),
 });
 
 type RegisterSchema = z.infer<typeof registerSchema>;
+
+const BELT_OPTIONS = [
+    { value: 'white', label: 'Branca' },
+    { value: 'grey', label: 'Cinza' },
+    { value: 'yellow', label: 'Amarela' },
+    { value: 'orange', label: 'Laranja' },
+    { value: 'green', label: 'Verde' },
+    { value: 'blue', label: 'Azul' },
+    { value: 'purple', label: 'Roxa' },
+    { value: 'brown', label: 'Marrom' },
+    { value: 'black', label: 'Preta' },
+    { value: 'red', label: 'Vermelha' },
+    { value: 'coral', label: 'Coral' },
+];
 
 export const Register = () => {
     const navigate = useNavigate();
@@ -31,7 +47,8 @@ export const Register = () => {
     } = useForm<RegisterSchema>({
         resolver: zodResolver(registerSchema),
         defaultValues: {
-            role: 'aluno'
+            role: 'aluno',
+            beltColor: 'white'
         }
     });
 
@@ -107,6 +124,27 @@ export const Register = () => {
                             </button>
                         </div>
                     </div>
+
+                    <div className="space-y-1">
+                        <label className="text-sm font-medium text-neutral-700">Faixa</label>
+                        <select
+                            {...register('beltColor')}
+                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            {BELT_OPTIONS.map((belt) => (
+                                <option key={belt.value} value={belt.value}>
+                                    {belt.label}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <Input
+                        label="Data de Nascimento"
+                        type="date"
+                        error={errors.birthDate?.message}
+                        {...register('birthDate')}
+                    />
 
                     <Button type="submit" className="w-full" isLoading={isLoading}>
                         Cadastrar

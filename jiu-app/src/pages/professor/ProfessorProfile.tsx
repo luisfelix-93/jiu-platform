@@ -19,7 +19,7 @@ const profileSchema = z.object({
 
 type ProfileSchema = z.infer<typeof profileSchema>;
 
-export const StudentProfile = () => {
+export const ProfessorProfile = () => {
     const { user, updateUser } = useAuthStore();
     const [successMessage, setSuccessMessage] = useState('');
     const [error, setError] = useState('');
@@ -110,7 +110,7 @@ export const StudentProfile = () => {
                         <div>
                             <h3 className="font-medium text-lg">{user.name}</h3>
                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary uppercase">
-                                Faixa {user.beltColor || 'Branca'}
+                                {user.role === 'professor' ? 'Professor' : `Faixa ${user.beltColor || 'Branca'}`}
                             </span>
                             <p className="text-sm text-neutral-500 mt-1">Membro ativo</p>
                         </div>

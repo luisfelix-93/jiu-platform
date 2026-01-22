@@ -12,6 +12,7 @@ import lessonRoutes from "./routes/lesson.routes";
 import attendanceRoutes from "./routes/attendance.routes";
 import contentRoutes from "./routes/content.routes";
 import dashboardRoutes from "./routes/dashboard.routes";
+import graduationRoutes from "./routes/graduation.routes";
 
 const app = express();
 
@@ -63,6 +64,7 @@ app.use("/api/lessons", lessonRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/content", contentRoutes);
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/graduation", graduationRoutes);
 
 app.get("/health", (req, res) => {
     res.json({

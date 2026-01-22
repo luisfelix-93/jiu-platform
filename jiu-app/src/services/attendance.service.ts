@@ -8,6 +8,12 @@ export interface AttendanceStats {
         date: string;
         className: string;
     };
+    graduation?: {
+        beltColor: string;
+        stripeCount: number;
+        nextGoal: number;
+        remaining: number;
+    };
 }
 
 export const AttendanceService = {

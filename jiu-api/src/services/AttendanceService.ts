@@ -99,18 +99,118 @@ export class AttendanceService {
     }
 
     static async getUserAttendanceStats(userId: string) {
+        // Fetch attendances sorted by date descending for easier processing
         const attendances = await attendanceRepository.find({
-            where: { userId },
-            relations: ["lesson", "lesson.class"]
+            where: { userId, status: 'present' },
+            relations: ["lesson", "lesson.class"],
+            order: {
+                lesson: {
+                    date: "DESC"
+                }
+            }
         });
 
-        const total = attendances.length;
-        const present = attendances.filter(a => a.status === 'present').length;
+        // 1. Total Classes
+        const totalClasses = attendances.length;
+
+        // 2. Streak Calculation (Consecutive Days Present)
+        let streak = 0;
+        if (attendances.length > 0) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            // Get unique dates of attendance
+            const uniqueDates = Array.from(new Set(attendances.map(a => new Date(a.lesson.date).toDateString())));
+
+            // Check if user attended today or yesterday to start streak counting
+            // Convert strings back to dates for comparison
+            const sortedUniqueDates = uniqueDates.map(d => new Date(d)).sort((a, b) => b.getTime() - a.getTime());
+
+            if (sortedUniqueDates.length > 0) {
+                const firstDate = sortedUniqueDates[0];
+                const diffTime = Math.abs(today.getTime() - firstDate.getTime());
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                // If last attendance was today (0) or yesterday (1), streak is alive
+                if (diffDays <= 1) {
+                    streak = 1;
+                    // Iterate backwards checking for continuity
+                    for (let i = 0; i < sortedUniqueDates.length - 1; i++) {
+                        const current = sortedUniqueDates[i];
+                        const prev = sortedUniqueDates[i + 1];
+
+                        const dTime = Math.abs(current.getTime() - prev.getTime());
+                        const dDays = Math.round(dTime / (1000 * 60 * 60 * 24));
+
+                        if (dDays === 1) {
+                            streak++;
+                        } else {
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        // 3. Last Class
+        const lastClass = attendances.length > 0 ? {
+            date: attendances[0].lesson.date,
+            className: attendances[0].lesson.class.name
+        } : null;
+
+        // 4. Monthly Attendance (Last 6 months)
+        const monthlyAttendance: { month: string; count: number }[] = [];
+        const monthMap = new Map<string, number>();
+
+        // Initialize last 6 months
+        for (let i = 5; i >= 0; i--) {
+            const d = new Date();
+            d.setMonth(d.getMonth() - i);
+            const key = d.toLocaleString('pt-BR', { month: 'long' }); // e.g., "janeiro"
+            monthMap.set(key, 0);
+            if (!monthlyAttendance.find(m => m.month === key)) {
+                monthlyAttendance.push({ month: key, count: 0 });
+            }
+        }
+
+        attendances.forEach(a => {
+            const d = new Date(a.lesson.date);
+            // Only count if within relevant range? For now, count all matching keys for simplicity 
+            // but effectively we want to fill the specific buckets.
+            const key = d.toLocaleString('pt-BR', { month: 'long' });
+            if (monthMap.has(key)) {
+                // Determine if this attendance is from the current year/recent context
+                // This simple logic might aggregate multiple years (e.g. Jan 2024 and Jan 2025). 
+                // Better to use YYYY-MM key then format.
+
+                // Let's refine: Use ISO YYYY-MM check
+                const matchIndex = monthlyAttendance.findIndex(m => m.month === key);
+                // Simple heuristic: if the attendance date is within the last ~180 days
+                const now = new Date();
+                const diffTime = Math.abs(now.getTime() - d.getTime());
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                if (diffDays <= 180 && matchIndex !== -1) {
+                    monthlyAttendance[matchIndex].count++;
+                }
+            }
+        });
+
+        // 5. Graduation Info
+        const user = await userRepository.findOne({ where: { id: userId }, select: ["beltColor", "stripeCount", "nextGraduationGoal"] });
+        const graduation = user ? {
+            beltColor: user.beltColor,
+            stripeCount: user.stripeCount,
+            nextGoal: user.nextGraduationGoal || 0, // 0 means not set
+            remaining: user.nextGraduationGoal ? Math.max(0, user.nextGraduationGoal - totalClasses) : 0
+        } : null;
 
         return {
-            total,
-            present,
-            history: attendances
+            totalClasses,
+            streak,
+            lastClass,
+            monthlyAttendance,
+            graduation
         };
     }
 }

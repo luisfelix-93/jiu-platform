@@ -9,6 +9,36 @@ O projeto funciona como um monorepo contendo:
 - **`jiu-api/`**: Backend desenvolvido em Node.js com Express e PostgreSQL.
 - **`jiu-app/`**: Frontend desenvolvido em React com Vite e TailwindCSS.
 
+## ✨ Funcionalidades
+
+### 🎯 Gestão de Alunos e Professores
+- Cadastro e autenticação de usuários (alunos, professores, administradores)
+- Perfis personalizados com informações detalhadas
+- Controle de acesso baseado em roles
+
+### 📅 Agendamento e Aulas
+- Sistema de agendamento de aulas por turmas
+- Calendário interativo para visualização de aulas
+- Controle de presença e frequência
+
+### 🥋 Sistema de Graduação
+- Registro e acompanhamento de faixas (branco a preto)
+- Cálculo automático de progressão baseado em frequência
+- Metas customizáveis de tempo e aulas necessárias
+- Interface para professores promoverem alunos
+- Dashboard de progresso para alunos
+
+### 📊 Relatórios e Analytics
+- Relatórios de frequência e participação
+- Análises de progresso dos alunos
+- Estatísticas de turmas e professores
+
+### 🔒 Segurança e Conformidade
+- Autenticação JWT com cookies HttpOnly
+- Controle de rate limiting
+- Validação rigorosa de dados
+- Conformidade com especificações de segurança
+
 ## 🚀 Tecnologias
 
 ### Backend (jiu-api)

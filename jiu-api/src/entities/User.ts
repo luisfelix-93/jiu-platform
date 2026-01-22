@@ -35,11 +35,17 @@ export class User {
     @Column({ name: "avatar_url", nullable: true })
     avatarUrl: string;
 
+    @Column({ name: "next_graduation_goal", nullable: true })
+    nextGraduationGoal: number;
+
     @Column({ name: "is_active", default: true })
     isActive: boolean;
 
     @CreateDateColumn({ name: "created_at" })
     createdAt: Date;
+
+    @Column({ name: "birth_date", type: "date", nullable: true })
+    birthDate: Date;
 
     @UpdateDateColumn({ name: "updated_at" })
     updatedAt: Date;

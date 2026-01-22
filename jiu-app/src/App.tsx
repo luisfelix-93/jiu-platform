@@ -18,6 +18,8 @@ import { ProfessorClasses } from './pages/professor/ProfessorClasses';
 import { ProfessorAttendance } from './pages/professor/ProfessorAttendance';
 import { ProfessorContent } from './pages/professor/ProfessorContent';
 import { ProfessorLessons } from './pages/professor/ProfessorLessons';
+import { Graduation } from './pages/professor/Graduation';
+import { ProfessorProfile } from './pages/professor/ProfessorProfile';
 
 import { useEffect } from 'react';
 
@@ -102,7 +104,9 @@ function App() {
           <Route path="turmas" element={<ProfessorClasses />} />
           <Route path="aulas" element={<ProfessorLessons />} />
           <Route path="presenca" element={<ProfessorAttendance />} />
+          <Route path="graduacao" element={<Graduation />} />
           <Route path="conteudos" element={<ProfessorContent />} />
+          <Route path="perfil" element={<ProfessorProfile />} />
         </Route>
       </Routes>
       <Analytics />

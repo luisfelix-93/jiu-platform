@@ -353,6 +353,98 @@ Retorna dados contextualizados para o usuário logado (Aluno, Professor ou Admin
 
 ---
 
+### 8. Graduação (`/api/graduation`)
+
+#### Obter Progresso de Graduação
+**GET** `/progress/:userId`
+*Auth: Bearer Token (Professor/Admin)*
+
+Retorna o progresso atual de graduação de um aluno, incluindo faixa atual, próxima meta e porcentagem de progresso.
+
+**Resposta de Sucesso (200 OK):**
+```json
+{
+  "currentBelt": "azul",
+  "nextBelt": "roxa",
+  "lessonsAttended": 45,
+  "requiredLessons": 60,
+  "timeSinceLastPromotion": 180,
+  "minimumTimeRequired": 365,
+  "progressPercentage": 75,
+  "canPromote": false
+}
+```
+
+**Resposta de Erro (404 Not Found):**
+```json
+{
+  "error": "User not found"
+}
+```
+
+#### Atualizar Faixa do Aluno
+**POST** `/update-belt`
+*Auth: Bearer Token (Professor/Admin)*
+
+Atualiza a faixa de um aluno e registra a data da promoção.
+
+**Corpo da Requisição:**
+```json
+{
+  "userId": "uuid-do-aluno",
+  "newBelt": "roxa",
+  "promotionDate": "2026-01-15"
+}
+```
+
+**Resposta de Sucesso (200 OK):**
+```json
+{
+  "success": true,
+  "updatedUser": {
+    "id": "uuid-do-aluno",
+    "currentBelt": "roxa",
+    "beltDate": "2026-01-15"
+  }
+}
+```
+
+**Resposta de Erro (403 Forbidden):**
+```json
+{
+  "error": "Insufficient permissions"
+}
+```
+
+#### Listar Metas de Graduação
+**GET** `/goals`
+*Auth: Bearer Token*
+
+Retorna as metas padrão de graduação para todas as faixas.
+
+**Resposta de Sucesso (200 OK):**
+```json
+[
+  {
+    "belt": "branca",
+    "minTime": 90,
+    "minLessons": 30
+  },
+  {
+    "belt": "azul",
+    "minTime": 180,
+    "minLessons": 60
+  },
+  {
+    "belt": "roxa",
+    "minTime": 365,
+    "minLessons": 100
+  }
+]
+```
+
+---
+
 ## Códigos de Erro Comuns
 
 | Código | Significado | Descrição |
