@@ -1,41 +1,15 @@
-import { useEffect, useState } from 'react';
 import { Card } from '../../components/ui/Card';
 import { Users, BookOpen, Video, LayoutList } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { useNavigate } from 'react-router-dom';
-import api from '../../lib/api';
 
-interface DashboardStats {
-    totalUsers: number;
-    totalClasses: number;
-    totalLessons: number;
-    totalContent: number;
-}
+
+
 
 export const AdminHome = () => {
     const navigate = useNavigate();
-    const [stats, setStats] = useState<DashboardStats>({
-        totalUsers: 0,
-        totalClasses: 0,
-        totalLessons: 0,
-        totalContent: 0
-    });
 
-    useEffect(() => {
-        // Fetch stats if API supports it, or individual lists
-        // For now using mock/placeholder or we can fetch lists length
-        const fetchStats = async () => {
-            try {
-                // We'd ideally have a dashboard stats endpoint. 
-                // Using separate calls might be slow but works for MVP.
-                const users = await api.get('/users?role=aluno'); // Just counting students for now or create a stats endpoint
-                // Actually let's just show static cards linking to sections for now if endpoints aren't ready
-            } catch (e) {
-                console.error(e);
-            }
-        };
-        fetchStats();
-    }, []);
+
 
     const actions = [
         {

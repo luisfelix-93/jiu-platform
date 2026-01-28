@@ -74,6 +74,11 @@ export const Login = () => {
                         error={errors.password?.message}
                         {...register('password')}
                     />
+                    <div className="text-right">
+                        <Link to="/forgot-password" className="text-xs text-primary hover:underline">
+                            Esqueci minha senha
+                        </Link>
+                    </div>
                     <Button type="submit" className="w-full" isLoading={isLoading}>
                         Entrar
                     </Button>

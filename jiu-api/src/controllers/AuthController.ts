@@ -70,4 +70,26 @@ export class AuthController {
             maxAge: 7 * 24 * 60 * 60 * 1000 // 7d
         });
     }
+
+    static async forgotPassword(req: Request, res: Response) {
+        try {
+            const { email } = req.body;
+            await AuthService.forgotPassword(email);
+            // Always return success to prevent email enumeration
+            res.json({ message: "If the email exists, a reset link has been sent." });
+        } catch (error: any) {
+            console.error("Forgot password error:", error);
+            res.status(500).json({ error: "Internal server error" });
+        }
+    }
+
+    static async resetPassword(req: Request, res: Response) {
+        try {
+            const { token, password } = req.body;
+            await AuthService.resetPassword(token, password);
+            res.json({ message: "Password successfully reset" });
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
 }
