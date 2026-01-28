@@ -51,4 +51,7 @@ doc/*_specs.md
 code_review.md
 
 #Scripts
-jiu-api/src/scripts 
+jiu-api/src/scripts
+
+# Logs
+*.log 

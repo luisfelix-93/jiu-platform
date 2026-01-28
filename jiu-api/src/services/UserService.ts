@@ -2,6 +2,9 @@ import { AppDataSource } from "../data-source";
 import { User } from "../entities/User";
 import { Profile } from "../entities/Profile";
 import { UserRole } from "../entities/User";
+import * as bcrypt from "bcrypt";
+import { BELT_ORDER_KIDS, BELT_ORDER_ADULT, ADULT_AGE } from "../constants/belt.constants";
+import { calculateAge } from "../utils/date.utils";
 
 const userRepository = AppDataSource.getRepository(User);
 const profileRepository = AppDataSource.getRepository(Profile);
@@ -56,28 +59,15 @@ export class UserService {
     }
 
     static async listStudentsWithGraduationInfo() {
-        // Get all students
-        const students = await userRepository.find({
-            where: { role: UserRole.ALUNO },
-            select: ["id", "name", "beltColor", "stripeCount", "nextGraduationGoal", "avatarUrl"]
-        });
+        const students = await userRepository.createQueryBuilder("user")
+            .select(["user.id", "user.name", "user.beltColor", "user.stripeCount", "user.nextGraduationGoal", "user.avatarUrl"])
+            .where("user.role = :role", { role: UserRole.ALUNO })
+            .loadRelationCountAndMap("user.attendanceCount", "user.attendances", "attendance", qb =>
+                qb.where("attendance.status = :status", { status: "present" })
+            )
+            .getMany();
 
-        // Get attendance counts
-        // We can do this via a subquery or separate query. Separate is easier for TypeORM unless strictly optimized.
-        // Let's use QueryBuilder to do it in one go if possible, or mapping.
-
-        const studentsWithAttendance = await Promise.all(students.map(async (student) => {
-            const attendanceCount = await AppDataSource.getRepository("Attendance").count({
-                where: { userId: student.id, status: "present" }
-            });
-
-            return {
-                ...student,
-                attendanceCount
-            };
-        }));
-
-        return studentsWithAttendance;
+        return students;
     }
 
     static async updateGraduationGoal(userId: string, goal: number) {
@@ -92,24 +82,13 @@ export class UserService {
         const user = await userRepository.findOneBy({ id: userId });
         if (!user) throw new Error("User not found");
 
-        const BELT_ORDER_KIDS = ["white", "grey", "yellow", "orange", "green"];
-        const BELT_ORDER_ADULT = ["white", "blue", "purple", "brown", "black", "red", "coral"];
-
         const userBelt = user.beltColor.toLowerCase();
 
         // Check Age
         let isAdult = false;
-
         if (user.birthDate) {
-            const today = new Date();
-            const birthDate = new Date(user.birthDate);
-
-            let age = today.getFullYear() - birthDate.getFullYear();
-            const m = today.getMonth() - birthDate.getMonth();
-            if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-                age--;
-            }
-            if (age >= 16) isAdult = true;
+            const age = calculateAge(user.birthDate);
+            if (age >= ADULT_AGE) isAdult = true;
         }
 
         // 4 stripes means next step is belt promotion
@@ -121,7 +100,7 @@ export class UserService {
                 user.stripeCount = 0;
             } else {
                 // Standard Progression
-                // Use Adult list if Adult and already past white (or if standard logic applies)
+                // Use Adult list if Adult
                 // Use Kids list if Kid
                 const beltList = isAdult ? BELT_ORDER_ADULT : BELT_ORDER_KIDS;
 
@@ -145,5 +124,68 @@ export class UserService {
         const savedUser = await userRepository.save(user);
 
         return savedUser;
+    }
+
+    static async createUser(data: any) {
+        const { email, password, name, role, beltColor, stripeCount, birthDate } = data;
+
+        const existingUser = await userRepository.findOneBy({ email });
+        if (existingUser) {
+            throw new Error("User already exists");
+        }
+
+        const passwordHash = await bcrypt.hash(password, 12);
+
+        const user = userRepository.create({
+            email,
+            passwordHash,
+            name,
+            role: role || UserRole.ALUNO,
+            beltColor: beltColor || "white",
+            stripeCount: stripeCount || 0,
+            birthDate: birthDate ? new Date(birthDate) : undefined,
+            isActive: true
+        });
+
+        await userRepository.save(user);
+
+        // Initialize profile
+        const profile = profileRepository.create({ userId: user.id });
+        await profileRepository.save(profile);
+
+        const { passwordHash: _, ...result } = user;
+        return result;
+    }
+
+    static async updateUser(id: string, data: any) {
+        const user = await userRepository.findOneBy({ id });
+        if (!user) {
+            throw new Error("User not found");
+        }
+
+        if (data.name) user.name = data.name;
+        if (data.role) user.role = data.role;
+        if (data.beltColor) user.beltColor = data.beltColor;
+        if (data.stripeCount !== undefined) user.stripeCount = data.stripeCount;
+        if (data.birthDate) user.birthDate = new Date(data.birthDate);
+        if (data.isActive !== undefined) user.isActive = data.isActive;
+
+        if (data.password) {
+            user.passwordHash = await bcrypt.hash(data.password, 12);
+        }
+
+        await userRepository.save(user);
+
+        const { passwordHash: _, ...result } = user;
+        return result;
+    }
+
+    static async deleteUser(id: string) {
+        const user = await userRepository.findOneBy({ id });
+        if (!user) {
+            throw new Error("User not found");
+        }
+
+        await userRepository.remove(user);
     }
 }

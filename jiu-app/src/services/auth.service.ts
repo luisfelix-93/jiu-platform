@@ -33,5 +33,13 @@ export const AuthService = {
     async getMe(): Promise<User> {
         const { data } = await api.get("/users/me");
         return data;
+    },
+
+    async forgotPassword(email: string) {
+        return api.post("/auth/forgot-password", { email });
+    },
+
+    async resetPassword(token: string, password: string) {
+        return api.post("/auth/reset-password", { token, password });
     }
 };

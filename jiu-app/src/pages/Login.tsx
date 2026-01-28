@@ -39,8 +39,10 @@ export const Login = () => {
 
             if (user?.role === 'aluno') {
                 navigate('/aluno');
-            } else if (user?.role === 'professor' || user?.role === 'admin') {
+            } else if (user?.role === 'professor') {
                 navigate('/professor');
+            } else if (user?.role === 'admin') {
+                navigate('/admin');
             }
         } catch (error) {
             console.error('Login failed', error);
@@ -72,6 +74,11 @@ export const Login = () => {
                         error={errors.password?.message}
                         {...register('password')}
                     />
+                    <div className="text-right">
+                        <Link to="/forgot-password" className="text-xs text-primary hover:underline">
+                            Esqueci minha senha
+                        </Link>
+                    </div>
                     <Button type="submit" className="w-full" isLoading={isLoading}>
                         Entrar
                     </Button>

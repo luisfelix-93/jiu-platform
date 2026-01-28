@@ -43,6 +43,6 @@ export const ClassService = {
     },
 
     async removeStudent(classId: string, studentId: string): Promise<void> {
-        await api.delete(`/classes/${classId}/students/${studentId}`);
+        await api.delete(`/classes/${classId}/enroll/${studentId}`);
     }
 };

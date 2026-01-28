@@ -1,4 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from "typeorm";
+import { Attendance } from "./Attendance";
 
 export enum UserRole {
     ALUNO = "aluno",
@@ -49,4 +50,13 @@ export class User {
 
     @UpdateDateColumn({ name: "updated_at" })
     updatedAt: Date;
+
+    @Column({ name: "reset_token", nullable: true })
+    resetToken: string | null;
+
+    @Column({ name: "reset_token_expires", type: "timestamp", nullable: true })
+    resetTokenExpires: Date | null;
+
+    @OneToMany(() => Attendance, (attendance) => attendance.user)
+    attendances: Attendance[];
 }
