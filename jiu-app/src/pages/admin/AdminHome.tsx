@@ -3,13 +3,8 @@ import { Users, BookOpen, Video, LayoutList } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { useNavigate } from 'react-router-dom';
 
-
-
-
 export const AdminHome = () => {
     const navigate = useNavigate();
-
-
 
     const actions = [
         {

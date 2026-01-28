@@ -2,6 +2,9 @@ import { Router } from "express";
 import { AuthController } from "../controllers/AuthController";
 import { rateLimit } from "express-rate-limit";
 
+import { validate } from "../middlewares/validate.middleware";
+import { registerSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema } from "../schemas/auth.schema";
+
 const router = Router();
 
 const loginLimiter = rateLimit({
@@ -20,10 +23,10 @@ const registerLimiter = rateLimit({
     message: { error: "Too many accounts created from this IP, please try again after an hour" }
 });
 
-router.post("/register", registerLimiter, AuthController.register);
-router.post("/login", loginLimiter, AuthController.login);
+router.post("/register", registerLimiter, validate(registerSchema), AuthController.register);
+router.post("/login", loginLimiter, validate(loginSchema), AuthController.login);
 router.post("/refresh", AuthController.refresh);
-router.post("/forgot-password", AuthController.forgotPassword);
-router.post("/reset-password", AuthController.resetPassword);
+router.post("/forgot-password", validate(forgotPasswordSchema), AuthController.forgotPassword);
+router.post("/reset-password", validate(resetPasswordSchema), AuthController.resetPassword);
 
 export default router;

@@ -16,7 +16,7 @@ export class Attendance {
     @Index()
     lessonId: string;
 
-    @ManyToOne(() => User, (user) => user.id, { onDelete: "CASCADE" })
+    @ManyToOne(() => User, (user) => user.attendances, { onDelete: "CASCADE" })
     @JoinColumn({ name: "user_id" })
     user: User;
 

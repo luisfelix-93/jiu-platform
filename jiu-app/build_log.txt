@@ -1,2 +1,0 @@
-src/pages/admin/AdminHome.tsx(17,12): error TS6133: 'stats' is declared but its value is never read.
-src/pages/admin/AdminHome.tsx(17,19): error TS6133: 'setStats' is declared but its value is never read.

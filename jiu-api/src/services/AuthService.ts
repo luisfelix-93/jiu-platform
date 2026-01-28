@@ -150,8 +150,8 @@ export class AuthService {
         const passwordHash = await bcrypt.hash(password, 12);
 
         user.passwordHash = passwordHash;
-        user.resetToken = null as any;
-        user.resetTokenExpires = null as any;
+        user.resetToken = null;
+        user.resetTokenExpires = null;
 
         await userRepository.save(user);
     }
