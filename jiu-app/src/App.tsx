@@ -20,6 +20,12 @@ import { ProfessorContent } from './pages/professor/ProfessorContent';
 import { ProfessorLessons } from './pages/professor/ProfessorLessons';
 import { Graduation } from './pages/professor/Graduation';
 import { ProfessorProfile } from './pages/professor/ProfessorProfile';
+import { AdminLayout } from './pages/admin/AdminLayout';
+import { AdminHome } from './pages/admin/AdminHome';
+import { AdminUsers } from './pages/admin/AdminUsers';
+import { AdminClasses } from './pages/admin/AdminClasses';
+import { AdminLessons } from './pages/admin/AdminLessons';
+import { AdminContent } from './pages/admin/AdminContent';
 
 import { useEffect } from 'react';
 
@@ -35,7 +41,7 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode;
   // Let's standardise the route allowedRoles to match backend: 'aluno' | 'professor'
 
   if (allowedRoles && user && !allowedRoles.includes(user.role)) {
-    return <Navigate to={user.role === 'aluno' ? '/aluno' : '/professor'} replace />;
+    return <Navigate to={user.role === 'aluno' ? '/aluno' : user.role === 'admin' ? '/admin' : '/professor'} replace />;
   }
 
   return <>{children}</>;
@@ -107,6 +113,22 @@ function App() {
           <Route path="graduacao" element={<Graduation />} />
           <Route path="conteudos" element={<ProfessorContent />} />
           <Route path="perfil" element={<ProfessorProfile />} />
+        </Route>
+
+        {/* Protected Admin Routes */}
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <AdminLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<AdminHome />} />
+          <Route path="usuarios" element={<AdminUsers />} />
+          <Route path="turmas" element={<AdminClasses />} />
+          <Route path="aulas" element={<AdminLessons />} />
+          <Route path="conteudos" element={<AdminContent />} />
         </Route>
       </Routes>
       <Analytics />

@@ -2,6 +2,7 @@ import { AppDataSource } from "../data-source";
 import { User } from "../entities/User";
 import { Profile } from "../entities/Profile";
 import { UserRole } from "../entities/User";
+import * as bcrypt from "bcrypt";
 
 const userRepository = AppDataSource.getRepository(User);
 const profileRepository = AppDataSource.getRepository(Profile);
@@ -145,5 +146,68 @@ export class UserService {
         const savedUser = await userRepository.save(user);
 
         return savedUser;
+    }
+
+    static async createUser(data: any) {
+        const { email, password, name, role, beltColor, stripeCount, birthDate } = data;
+
+        const existingUser = await userRepository.findOneBy({ email });
+        if (existingUser) {
+            throw new Error("User already exists");
+        }
+
+        const passwordHash = await bcrypt.hash(password, 8);
+
+        const user = userRepository.create({
+            email,
+            passwordHash,
+            name,
+            role: role || UserRole.ALUNO,
+            beltColor: beltColor || "white",
+            stripeCount: stripeCount || 0,
+            birthDate: birthDate ? new Date(birthDate) : undefined,
+            isActive: true
+        });
+
+        await userRepository.save(user);
+
+        // Initialize profile
+        const profile = profileRepository.create({ userId: user.id });
+        await profileRepository.save(profile);
+
+        const { passwordHash: _, ...result } = user;
+        return result;
+    }
+
+    static async updateUser(id: string, data: any) {
+        const user = await userRepository.findOneBy({ id });
+        if (!user) {
+            throw new Error("User not found");
+        }
+
+        if (data.name) user.name = data.name;
+        if (data.role) user.role = data.role;
+        if (data.beltColor) user.beltColor = data.beltColor;
+        if (data.stripeCount !== undefined) user.stripeCount = data.stripeCount;
+        if (data.birthDate) user.birthDate = new Date(data.birthDate);
+        if (data.isActive !== undefined) user.isActive = data.isActive;
+
+        if (data.password) {
+            user.passwordHash = await bcrypt.hash(data.password, 8);
+        }
+
+        await userRepository.save(user);
+
+        const { passwordHash: _, ...result } = user;
+        return result;
+    }
+
+    static async deleteUser(id: string) {
+        const user = await userRepository.findOneBy({ id });
+        if (!user) {
+            throw new Error("User not found");
+        }
+
+        await userRepository.remove(user);
     }
 }

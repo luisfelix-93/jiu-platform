@@ -39,8 +39,10 @@ export const Login = () => {
 
             if (user?.role === 'aluno') {
                 navigate('/aluno');
-            } else if (user?.role === 'professor' || user?.role === 'admin') {
+            } else if (user?.role === 'professor') {
                 navigate('/professor');
+            } else if (user?.role === 'admin') {
+                navigate('/admin');
             }
         } catch (error) {
             console.error('Login failed', error);

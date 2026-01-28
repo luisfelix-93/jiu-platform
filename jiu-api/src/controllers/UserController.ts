@@ -31,4 +31,32 @@ export class UserController {
             res.status(400).json({ error: error.message });
         }
     }
+
+    // Admin methods
+    static async create(req: Request, res: Response) {
+        try {
+            const result = await UserService.createUser(req.body);
+            res.status(201).json(result);
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    static async update(req: Request, res: Response) {
+        try {
+            const result = await UserService.updateUser(req.params.id, req.body);
+            res.json(result);
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    static async delete(req: Request, res: Response) {
+        try {
+            await UserService.deleteUser(req.params.id);
+            res.json({ message: "User deleted successfully" });
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
 }
