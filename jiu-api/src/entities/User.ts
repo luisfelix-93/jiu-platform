@@ -51,7 +51,7 @@ export class User {
     @UpdateDateColumn({ name: "updated_at" })
     updatedAt: Date;
 
-    @Column({ name: "reset_token", nullable: true })
+    @Column({ name: "reset_token", type: "varchar", nullable: true })
     resetToken: string | null;
 
     @Column({ name: "reset_token_expires", type: "timestamp", nullable: true })
