@@ -2,7 +2,7 @@
     "rewrites": [
         {
             "source": "/api/:path*",
-            "destination": "https://jiu-api.vercel.app/api/:path*"
+            "destination": "${API_BASE_URL}/api/:path*"
         },
         {
             "source": "/(.*)",
