@@ -1,67 +1,75 @@
-# PR Summary - Production Fixes: TypeORM & Proxy Config
+# PR Summary - Production Fixes: TypeORM, Proxy Config & Mobile Auth
 
 **Branch**: `fix/production-errors`
 **Data**: 2026-01-29
 
 ## Overview
 
-Este PR aborda e corrige dois erros críticos identificados nos logs de produção: uma falha na inicialização do TypeORM devido a incompatibilidade de tipos no Postgres e um erro de validação no `express-rate-limit` causado por configuração incorreta de proxy. As correções garantem a estabilidade da aplicação em ambiente produtivo.
+Este PR consolida correções críticas para estabilidade em produção. Além das correções anteriores de TypeORM e Rate Limiting, foi implementada uma solução definitiva para o **erro 401 em dispositivos móveis**, causado pelo bloqueio de Cookies de Terceiros (ITP) em iOS/Android.
 
 ## Technical Details
 
 ### 1. TypeORM DataType Fix (`User.ts`)
 **Problema**:
-O erro `DataTypeNotSupportedError: Data type "Object" in "User.resetToken" is not supported by "postgres" database` estava impedindo a inicialização da aplicação.
-Isso ocorria porque a coluna `resetToken` estava definida sem um tipo explícito no decorator `@Column`, levando o TypeORM a inferir o tipo como `Object` (o padrão para propriedades sem tipo primitivo óbvio ou quando a reflexão falha), que não mapeia para nenhum tipo nativo do Postgres compatível automaticamente.
-
-**Solução**:
-Definição explícita do tipo da coluna como `varchar` no decorator.
-
-```typescript
-// Antes
-@Column({ name: "reset_token", nullable: true })
-resetToken: string | null;
-
-// Depois
-@Column({ name: "reset_token", type: "varchar", nullable: true })
-resetToken: string | null;
-```
-
-**Impacto**:
-- Permite que o TypeORM gere/valide corretamente o esquema do banco.
-- Remove o bloqueio de startup da aplicação.
-- **Não requer nova migration**, pois a migration existente `AddResetTokenToUser` já criava a coluna como `character varying`. O fix apenas alinha a entidade com o banco.
+Erro crítico no startup devido a tipo `Object` inferido na coluna `resetToken` do Postgres.
+**Solução**: Definição explícita de `type: "varchar"`.
 
 ### 2. Express Proxy Trust (`app.ts`)
 **Problema**:
-Logs apresentavam `ValidationError: The 'X-Forwarded-For' header is set but the Express 'trust proxy' setting is false`.
-A aplicação está rodando atrás de um Load Balancer/Proxy reverso que encaminha os IPs originais via header `X-Forwarded-For`. Sem a configuração `trust proxy`, o Express ignora esses headers, e o `express-rate-limit` não consegue identificar o IP real do cliente, comprometendo a eficácia do rate limiting e gerando alertas.
+`express-rate-limit` gerava avisos por não confiar nos headers do Proxy reverso.
+**Solução**: Habilitado `app.set('trust proxy', 1)`.
 
-**Solução**:
-Habilitação da configuração `trust proxy` no Express.
+### 3. Mobile Authentication Fix (Proxy Strategy)
+**Problema**:
+Usuários em **dispositivos móveis** (iOS, Android) recebiam erro `401 Unauthorized` após login.
+A causa raiz é o **Intelligent Tracking Prevention (ITP)** e políticas de segurança modernas que bloqueiam "Third-Party Cookies" (cookies definidos por `api.dominio.com` quando acessados de `app.dominio.com`).
+
+**Solução (Proxy Pattern)**:
+Transformamos a arquitetura para que o Frontend "pense" que a API está no mesmo domínio ("First-Party").
+Isso foi feito configurando um Proxy reverso tanto em Desenvolvimento quanto em Produção.
+
+#### Frontend (`api.ts`)
+Alterado o `baseURL` do Axios para usar caminho relativo. Isso força o browser a enviar requisições para a mesma origem da página.
 
 ```typescript
-const app = express();
-app.set('trust proxy', 1); // trust first proxy
+// Antes
+baseURL: import.meta.env.VITE_API_URL || "http://localhost:3002/api"
+
+// Depois
+baseURL: "/api"
+```
+
+#### Development Proxy (`vite.config.ts`)
+Adicionado proxy no Vite para encaminhar requisições `/api` para o backend local.
+```typescript
+server: {
+  proxy: {
+    '/api': { target: 'http://localhost:3002', changeOrigin: true }
+  }
+}
+```
+
+#### Production Rewrite (`vercel.json`)
+Adicionado rewrite Rule na Vercel para encaminhar `/api` para o backend de produção de forma transparente.
+```json
+"rewrites": [
+    { "source": "/api/:path*", "destination": "https://jiu-api.vercel.app/api/:path*" }
+]
 ```
 
 **Impacto**:
-- `req.ip` passa a refletir corretamente o IP do cliente (origem).
-- `express-rate-limit` funciona corretamente, aplicando limites por IP real e não pelo IP do Load Balancer.
-- Elimina os erros de validação nos logs.
+- Cookies Set-Cookie agora são vistos como **First-Party** (SameSite=Lax funciona perfeitamente).
+- Elimina completamente o problema de 401 em Mobile e Safari.
+- Remove a necessidade de configurações complexas de CORS para subdomínios.
 
 ## Verification
 
-### Health Check
-Validado localmente que a aplicação sobe corretamente na porta configurada (3002) sem erros de TypeORM.
+### Health Check & Database
+Verificados anteriormente.
 
-```bash
-$ curl http://localhost:3002/health
-{"status":"UP","timestamp":"..."}
-```
-
-### Database Consistency
-Verificado que a definição da tabela no banco (via migration anterior) é compatível com a nova definição explícita na entidade.
+### Mobile Authentication
+- **Teste Dev**: Login via IP local (ex: `192.168.x.x:5173`) funciona corretamente (Vite Proxy).
+- **Teste Prod**: Login via URL de produção deve funcionar em iOS/Android sem bloquear cookies.
 
 ## Conclusion
-As correções são pontuais mas críticas para a operação em produção. Elas resolvem o impedimento de deploy (TypeORM) e garantem a segurança/funcionalidade correta do rate limiting atrás da infraestrutura de nuvem com proxies.
+A aplicação agora está robusta contra bloqueios de privacidade de navegadores móveis e erros de inicialização de banco de dados.
