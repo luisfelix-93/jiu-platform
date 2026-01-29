@@ -58,9 +58,10 @@ Adicionado rewrite Rule na Vercel para encaminhar `/api` para o backend de produ
 ```
 
 **Impacto**:
-- Cookies Set-Cookie agora são vistos como **First-Party** (SameSite=Lax funciona perfeitamente).
+- Cookies `Set-Cookie` passam a ser tratados como **First-Party**, permitindo o uso seguro de `SameSite=Lax` no backend.
 - Elimina completamente o problema de 401 em Mobile e Safari.
 - Remove a necessidade de configurações complexas de CORS para subdomínios.
+- **Atenção**: para alinhar totalmente com esta abordagem, o `AuthController.ts` em produção deve atualizar a configuração de cookies para usar `sameSite: "lax"` (ou deve ser criado um issue/PR de follow-up para isso).
 
 ## Verification
 
