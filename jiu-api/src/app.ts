@@ -16,6 +16,8 @@ import graduationRoutes from "./routes/graduation.routes";
 
 const app = express();
 
+app.set('trust proxy', 1); // trust first proxy
+
 const allowedOrigins = [
     "http://localhost:5173",
     ...(process.env.FRONTEND_URL?.split(",") ?? [])
