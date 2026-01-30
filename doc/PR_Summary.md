@@ -1,76 +1,86 @@
-# PR Summary - Production Fixes: TypeORM, Proxy Config & Mobile Auth
+# PR Summary - Fix R2 Upload CORS Error in Production
 
-**Branch**: `fix/production-errors`
-**Data**: 2026-01-29
+**Branch**: `fix/r2-cors-production`
+**Data**: 2026-01-30
 
 ## Overview
 
-Este PR consolida correções críticas para estabilidade em produção. Além das correções anteriores de TypeORM e Rate Limiting, foi implementada uma solução definitiva para o **erro 401 em dispositivos móveis**, causado pelo bloqueio de Cookies de Terceiros (ITP) em iOS/Android.
+Este PR corrige o erro de upload de conteúdo para o Cloudflare R2 Bucket em ambiente de produção. O erro manifestava-se como "Upload failed: network error" e era causado por uma combinação de configuração CORS insuficiente e credenciais truncadas.
 
 ## Technical Details
 
-### 1. TypeORM DataType Fix (`User.ts`)
+### 1. CORS Configuration (`configure-cors.ts`)
 **Problema**:
-Erro crítico no startup devido a tipo `Object` inferido na coluna `resetToken` do Postgres.
-**Solução**: Definição explícita de `type: "varchar"`.
-
-### 2. Express Proxy Trust (`app.ts`)
-**Problema**:
-`express-rate-limit` gerava avisos por não confiar nos headers do Proxy reverso.
-**Solução**: Habilitado `app.set('trust proxy', 1)`.
-
-### 3. Mobile Authentication Fix (Proxy Strategy)
-**Problema**:
-Usuários em **dispositivos móveis** (iOS, Android) recebiam erro `401 Unauthorized` após login.
-A causa raiz é o **Intelligent Tracking Prevention (ITP)** e políticas de segurança modernas que bloqueiam "Third-Party Cookies" (cookies definidos por `api.dominio.com` quando acessados de `app.dominio.com`).
-
-**Solução (Proxy Pattern)**:
-Transformamos a arquitetura para que o Frontend "pense" que a API está no mesmo domínio ("First-Party").
-Isso foi feito configurando um Proxy reverso tanto em Desenvolvimento quanto em Produção.
-
-#### Frontend (`api.ts`)
-Alterado o `baseURL` do Axios para usar caminho relativo. Isso força o browser a enviar requisições para a mesma origem da página.
-
-```typescript
-// Antes
-baseURL: import.meta.env.VITE_API_URL || "http://localhost:3002/api"
-
-// Depois
-baseURL: "/api"
+Requisições XMLHttpRequest de `https://jiu-platform.vercel.app` para o R2 bucket eram bloqueadas com:
+```
+Access to XMLHttpRequest at 'https://[...].r2.cloudflarestorage.com/...' 
+from origin 'https://jiu-platform.vercel.app' has been blocked by CORS policy: 
+No 'Access-Control-Allow-Origin' header is present on the requested resource.
 ```
 
-#### Development Proxy (`vite.config.ts`)
-Adicionado proxy no Vite para encaminhar requisições `/api` para o backend local.
-```typescript
-server: {
-  proxy: {
-    '/api': { target: 'http://localhost:3002', changeOrigin: true }
-  }
-}
+**Solução**: 
+Adicionado o domínio de produção aos `AllowedOrigins` na configuração CORS do bucket.
+
+```diff
+  AllowedOrigins: [
+      "http://localhost:5173",
+      "http://localhost:3000",
+      "http://localhost:3002",
+-     "http://127.0.0.1:5173"
++     "http://127.0.0.1:5173",
++     "https://jiu-platform.vercel.app"
+  ]
 ```
 
-#### Production Rewrite (`vercel.json`)
-Adicionado rewrite Rule na Vercel para encaminhar `/api` para o backend de produção de forma transparente.
-```json
-"rewrites": [
-    { "source": "/api/:path*", "destination": "https://jiu-api.vercel.app/api/:path*" }
-]
-```
+### 2. Credential Issue Identified (Critical)
+**Problema Observado**:
+Durante a análise do log de erro, foi identificado que o `R2_ACCESS_KEY_ID` presente na URL de upload assinada está **truncado**:
+- **Log**: `...bf` (31 caracteres)
+- **Esperado**: `...bf9` (32 caracteres, conforme `.env` local)
 
 **Impacto**:
-- Cookies `Set-Cookie` passam a ser tratados como **First-Party**, permitindo o uso seguro de `SameSite=Lax` no backend.
-- Elimina completamente o problema de 401 em Mobile e Safari.
-- Remove a necessidade de configurações complexas de CORS para subdomínios.
-- **Atenção**: para alinhar totalmente com esta abordagem, o `AuthController.ts` em produção deve atualizar a configuração de cookies para usar `sameSite: "lax"` (ou deve ser criado um issue/PR de follow-up para isso).
+Este truncamento causa erro `403 Access Denied` da Cloudflare, que o navegador reporta como erro de CORS/Network.
+
+**Ação Requerida**: 
+A variável de ambiente `R2_ACCESS_KEY_ID` deve ser corrigida nas configurações do projeto Vercel para incluir a chave completa de 32 caracteres.
+
+## Implementation Steps
+
+### Para aplicar a correção CORS:
+1. **Obter credenciais de Admin** do R2 (se as atuais não tiverem permissão):
+   - Acesse Cloudflare Dashboard → R2 → API Tokens
+   - Crie token com permissão "Admin Read & Write"
+   - Atualize temporariamente `.env` local
+
+2. **Executar script de configuração**:
+   ```bash
+   npx ts-node scripts/configure-cors.ts
+   ```
+   
+3. **Verificar sucesso**:
+   O script deve exibir "Successfully configured CORS!" (sem erros de `AccessDenied`)
+
+### Para corrigir as credenciais (OBRIGATÓRIO):
+1. Acessar **Vercel Dashboard** → Projeto → Settings → Environment Variables
+2. Editar `R2_ACCESS_KEY_ID`
+3. Colar a chave completa (32 caracteres): 
+4. Redesploar a aplicação para aplicar a mudança
 
 ## Verification
 
-### Health Check & Database
-Verificados anteriormente.
+### CORS Configuration
+- ✅ Script `configure-cors.ts` atualizado
+- ⏳ Execução do script (requer credenciais Admin)
 
-### Mobile Authentication
-- **Teste Dev**: Login via IP local (ex: `192.168.x.x:5173`) funciona corretamente (Vite Proxy).
-- **Teste Prod**: Login via URL de produção deve funcionar em iOS/Android sem bloquear cookies.
+### Production Upload
+- ⏳ Após correção da variável na Vercel, testar upload de vídeo/arquivo em produção
+- ✅ Upload deve completar sem erro de CORS
+- ✅ Console do navegador não deve exibir erros de "Access-Control-Allow-Origin"
 
 ## Conclusion
-A aplicação agora está robusta contra bloqueios de privacidade de navegadores móveis e erros de inicialização de banco de dados.
+
+A solução envolve duas ações:
+1. **CORS**: Configuração do bucket R2 para aceitar requisições do domínio de produção.
+2. **Credenciais**: Correção urgente da variável `R2_ACCESS_KEY_ID` na Vercel (provavelmente o problema principal).
+
+Após aplicadas ambas as correções, uploads de conteúdo em produção devem funcionar normalmente.
