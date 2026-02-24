@@ -8,6 +8,7 @@ import { Input } from '../../components/ui/Input';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import { User, Phone } from 'lucide-react';
 import { AuthService } from '../../services/auth.service';
+import { translateBelt } from '../../utils/belt';
 
 const profileSchema = z.object({
     name: z.string().min(2, 'Nome deve ter no mínimo 2 caracteres'),
@@ -110,7 +111,7 @@ export const ProfessorProfile = () => {
                         <div>
                             <h3 className="font-medium text-lg">{user.name}</h3>
                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary uppercase">
-                                {user.role === 'professor' ? 'Professor' : `Faixa ${user.beltColor || 'Branca'}`}
+                                {user.role === 'professor' ? 'Professor' : `Faixa ${translateBelt(user.beltColor) || 'Branca'}`}
                             </span>
                             <p className="text-sm text-neutral-500 mt-1">Membro ativo</p>
                         </div>

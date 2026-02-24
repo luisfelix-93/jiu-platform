@@ -4,7 +4,7 @@ import { UserService } from "../services/UserService";
 export class UserController {
     static async getMe(req: Request, res: Response) {
         try {
-            const userId = (req as any).user.userId;
+            const userId = req.user!.userId;
             const result = await UserService.getProfile(userId);
             res.json(result);
         } catch (error: any) {
@@ -14,7 +14,7 @@ export class UserController {
 
     static async updateMe(req: Request, res: Response) {
         try {
-            const userId = (req as any).user.userId;
+            const userId = req.user!.userId;
             const result = await UserService.updateProfile(userId, req.body);
             res.json(result);
         } catch (error: any) {

@@ -5,7 +5,7 @@ import { UserRole } from "../entities/User";
 export class DashboardController {
     static async getDashboard(req: Request, res: Response) {
         try {
-            const user = (req as any).user;
+            const user = req.user!;
 
             if (user.role === UserRole.ALUNO) {
                 const data = await DashboardService.getStudentData(user.userId);
@@ -26,7 +26,7 @@ export class DashboardController {
 
     static async getStudentDashboard(req: Request, res: Response) {
         try {
-            const result = await DashboardService.getStudentData((req as any).user.userId);
+            const result = await DashboardService.getStudentData(req.user!.userId);
             res.json(result);
         } catch (error: any) {
             res.status(400).json({ error: error.message });
@@ -35,7 +35,7 @@ export class DashboardController {
 
     static async getProfessorDashboard(req: Request, res: Response) {
         try {
-            const result = await DashboardService.getProfessorData((req as any).user.userId);
+            const result = await DashboardService.getProfessorData(req.user!.userId);
             res.json(result);
         } catch (error: any) {
             res.status(400).json({ error: error.message });

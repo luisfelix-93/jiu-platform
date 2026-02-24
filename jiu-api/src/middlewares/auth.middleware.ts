@@ -3,10 +3,6 @@ import * as jwt from "jsonwebtoken";
 
 import { authConfig } from "../config/auth.config";
 
-export interface AuthRequest extends Request {
-    user?: jwt.JwtPayload | string;
-}
-
 export const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
     let token = req.cookies.accessToken;
 
@@ -24,7 +20,7 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
 
     try {
         const decoded = jwt.verify(token, authConfig.getJwtSecret());
-        (req as AuthRequest).user = decoded;
+        req.user = decoded as any;
         next();
     } catch (err: any) {
         if (err.name === "TokenExpiredError") {
@@ -43,7 +39,7 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
 
 export const checkRole = (roles: string[]) => {
     return (req: Request, res: Response, next: NextFunction) => {
-        const user = (req as any).user;
+        const user = req.user;
         if (!user || !roles.includes(user.role)) {
             res.status(403).json({ error: "Access denied" });
             return;

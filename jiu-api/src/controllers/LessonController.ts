@@ -2,21 +2,14 @@ import { Request, Response } from "express";
 import { LessonService } from "../services/LessonService";
 import { z } from "zod";
 
-interface AuthenticatedRequest extends Request {
-    user?: {
-        userId: string;
-    };
-}
-
 export class LessonController {
     static async create(req: Request, res: Response) {
         try {
-            const authReq = req as AuthenticatedRequest;
-            if (!authReq.user || !authReq.user.userId) {
+            if (!req.user || !req.user.userId) {
                 return res.status(401).json({ error: "Unauthorized" });
             }
 
-            const userId = authReq.user.userId;
+            const userId = req.user.userId;
 
             // Define validation schema
             const createLessonSchema = z.object({

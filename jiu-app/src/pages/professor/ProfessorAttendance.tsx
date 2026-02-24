@@ -7,6 +7,7 @@ import { AttendanceService } from '../../services/attendance.service';
 import { Check, X, Clock, Calendar } from 'lucide-react';
 import { format, addMinutes, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { translateBelt } from '../../utils/belt';
 
 export const ProfessorAttendance = () => {
     const [lessons, setLessons] = useState<Lesson[]>([]);
@@ -139,7 +140,7 @@ export const ProfessorAttendance = () => {
                                                     </div>
                                                     <div>
                                                         <p className="font-medium text-sm">{record.user?.name || 'Aluno'}</p>
-                                                        <p className="text-xs text-neutral-500 capitalize">{record.user?.beltColor || 'Branca'}</p>
+                                                        <p className="text-xs text-neutral-500 capitalize">{translateBelt(record.user?.beltColor) || 'Branca'}</p>
                                                     </div>
                                                 </div>
                                                 <div className="flex gap-2">
