@@ -5,6 +5,7 @@ import { Input } from '../../components/ui/Input';
 import { UserModal } from './components/UserModal';
 import { Edit2, Trash2, Plus, Search, Shield, User as UserIcon, GraduationCap } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
+import { translateBelt } from '../../utils/belt';
 
 export const AdminUsers = () => {
     const [users, setUsers] = useState<User[]>([]);
@@ -113,8 +114,8 @@ export const AdminUsers = () => {
                                 key={role}
                                 onClick={() => setRoleFilter(role)}
                                 className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${roleFilter === role
-                                        ? 'bg-white shadow text-primary'
-                                        : 'text-neutral-500 hover:text-neutral-700'
+                                    ? 'bg-white shadow text-primary'
+                                    : 'text-neutral-500 hover:text-neutral-700'
                                     }`}
                             >
                                 {role === 'all' ? 'Todos' : role.charAt(0).toUpperCase() + role.slice(1)}
@@ -163,7 +164,7 @@ export const AdminUsers = () => {
                                         </td>
                                         <td className="p-3">
                                             <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${getBeltColorDisplay(user.beltColor)}`}>
-                                                {user.beltColor.charAt(0).toUpperCase() + user.beltColor.slice(1)}
+                                                {translateBelt(user.beltColor)}
                                                 {user.stripeCount > 0 && ` (${user.stripeCount} graus)`}
                                             </span>
                                         </td>

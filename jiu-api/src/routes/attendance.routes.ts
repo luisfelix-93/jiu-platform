@@ -2,6 +2,8 @@ import { Router } from "express";
 import { AttendanceController } from "../controllers/AttendanceController";
 import { authMiddleware, checkRole } from "../middlewares/auth.middleware";
 import { UserRole } from "../entities/User";
+import { validate } from "../middlewares/validate.middleware";
+import { registerAttendanceSchema, checkInSchema } from "../schemas/attendance.schema";
 
 const router = Router();
 
@@ -40,9 +42,9 @@ router.get("/me/stats", AttendanceController.getStats);
 
 // I'll follow the spec.
 // /api/attendance routes:
-router.put("/:id", checkRole([UserRole.ADMIN, UserRole.PROFESSOR]), AttendanceController.register); // Updating specific attendance?
+router.put("/:lessonId", checkRole([UserRole.ADMIN, UserRole.PROFESSOR]), validate(registerAttendanceSchema), AttendanceController.register); // Updating specific attendance?
 router.get("/stats/:userId", AttendanceController.getStats);
-router.post("/check-in", AttendanceController.checkIn);
+router.post("/check-in", validate(checkInSchema), AttendanceController.checkIn);
 router.get("/status/:lessonId", AttendanceController.checkStatus);
 
 export default router;

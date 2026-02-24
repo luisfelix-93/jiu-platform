@@ -5,6 +5,7 @@ import { cn } from '../../lib/utils';
 import { Menu, X, LogOut, LayoutDashboard } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { ThemeToggle } from '../ThemeToggle';
+import { translateBelt } from '../../utils/belt';
 
 interface NavItem {
     label: string;
@@ -67,7 +68,7 @@ export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutPr
                             <div className="overflow-hidden">
                                 <p className="font-semibold text-sm truncate">{user?.name}</p>
                                 <span className="text-xs px-2 py-0.5 rounded-full bg-neutral-200 text-neutral-600 uppercase font-bold">
-                                    {user?.beltColor} Belt
+                                    Faixa {translateBelt(user?.beltColor)}
                                 </span>
                             </div>
                         </div>

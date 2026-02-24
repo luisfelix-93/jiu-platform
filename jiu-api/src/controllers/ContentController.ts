@@ -6,7 +6,7 @@ export class ContentController {
         try {
             const { lessonId } = req.params;
             const { title, description, contentType, fileUrl } = req.body;
-            const createdBy = (req as any).user.userId;
+            const createdBy = req.user!.userId;
 
             // In a real scenario, file upload processing would happen here or via middleware (multer)
             // For MVP, we assume fileUrl is passed or we handling a mock upload.

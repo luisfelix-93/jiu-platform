@@ -16,10 +16,10 @@ Derived from `doc/security_specs.md`.
     - Audit `helmet` configuration.
     - Configure `Content-Security-Policy` (CSP) appropriately.
 
-- [ ] **Input Validation Scope (Backend)**
+- [x] **Input Validation Scope (Backend)**
     - Ensure **ALL** controllers (not just Auth) use `zod` (or similar) for input validation.
 
-- [ ] **Type Safety (Backend)**
+- [x] **Type Safety (Backend)**
     - Extend the Express `Request` type definition globally to include `user` (and other custom props) to avoid using `(req as any).user`.
 
 # Performance Improvements (To Do)

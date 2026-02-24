@@ -6,7 +6,7 @@ export class AttendanceController {
         try {
             const { lessonId } = req.params;
             const { userId, status, notes } = req.body;
-            const checkedBy = (req as any).user.userId;
+            const checkedBy = req.user!.userId;
 
             const result = await AttendanceService.registerAttendance({
                 lessonId,
@@ -32,7 +32,7 @@ export class AttendanceController {
 
     static async getStats(req: Request, res: Response) {
         try {
-            const userId = req.params.userId || (req as any).user.userId;
+            const userId = req.params.userId || req.user!.userId;
             const result = await AttendanceService.getUserAttendanceStats(userId);
             res.json(result);
         } catch (error: any) {
@@ -43,7 +43,7 @@ export class AttendanceController {
     static async checkIn(req: Request, res: Response) {
         try {
             const { lessonId } = req.body;
-            const userId = (req as any).user.userId;
+            const userId = req.user!.userId;
 
             const result = await AttendanceService.registerAttendance({
                 lessonId,
@@ -61,7 +61,7 @@ export class AttendanceController {
     static async checkStatus(req: Request, res: Response) {
         try {
             const { lessonId } = req.params;
-            const userId = (req as any).user.userId;
+            const userId = req.user!.userId;
 
             const attendance = await AttendanceService.getLessonAttendance(lessonId);
             const userAttendance = attendance.find((a: any) => a.userId === userId);

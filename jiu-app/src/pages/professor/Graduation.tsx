@@ -3,6 +3,7 @@ import api from '../../lib/api';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
+import { translateBelt } from '../../utils/belt';
 
 interface Student {
     id: string;
@@ -169,19 +170,3 @@ export const Graduation = () => {
     );
 };
 
-const translateBelt = (color: string) => {
-    const map: Record<string, string> = {
-        white: "Branca",
-        grey: "Cinza",
-        yellow: "Amarela",
-        orange: "Laranja",
-        green: "Verde",
-        blue: "Azul",
-        purple: "Roxa",
-        brown: "Marrom",
-        black: "Preta",
-        red: "Vermelha",
-        coral: "Coral"
-    };
-    return map[color] || color;
-};
