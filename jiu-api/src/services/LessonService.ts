@@ -37,11 +37,32 @@ export class LessonService {
             where.date = MoreThanOrEqual(filters.startDate);
         }
 
-        return await lessonRepository.find({
+        // Pagination parameters
+        const page = filters.page || 1;
+        const limit = filters.limit || 20;
+        const skip = (page - 1) * limit;
+
+        // Fetch data with pagination
+        const [data, total] = await lessonRepository.findAndCount({
             where,
             relations: ["class", "professor"],
-            order: { date: "ASC", startTime: "ASC" }
+            order: { date: "ASC", startTime: "ASC" },
+            skip,
+            take: limit
         });
+
+        // Calculate total pages
+        const totalPages = Math.ceil(total / limit);
+
+        return {
+            data,
+            pagination: {
+                page,
+                limit,
+                total,
+                totalPages
+            }
+        };
     }
 
     static async getLessonById(id: string) {

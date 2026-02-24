@@ -34,11 +34,30 @@ export class ContentService {
     }
 
     static async listLibrary(filters: any) {
-        // Mock filters for library
-        return await contentRepository.find({
+        // Pagination parameters
+        const page = filters.page || 1;
+        const limit = filters.limit || 20;
+        const skip = (page - 1) * limit;
+
+        // Fetch data with pagination
+        const [data, total] = await contentRepository.findAndCount({
             relations: ["lesson"],
-            take: 50
+            skip,
+            take: limit
         });
+
+        // Calculate total pages
+        const totalPages = Math.ceil(total / limit);
+
+        return {
+            data,
+            pagination: {
+                page,
+                limit,
+                total,
+                totalPages
+            }
+        };
     }
 
     static async generateUploadUrl(fileName: string, contentType: string, lessonId?: string) {
