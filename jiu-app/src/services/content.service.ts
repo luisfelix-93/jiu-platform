@@ -14,7 +14,7 @@ export interface Content {
 export const ContentService = {
     async listLibrary(filters?: any): Promise<Content[]> {
         const { data } = await api.get("/content/library", { params: filters });
-        return data;
+        return data.data || data;
     },
 
     async getLessonContent(lessonId: string): Promise<Content[]> {

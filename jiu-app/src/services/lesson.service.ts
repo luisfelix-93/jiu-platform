@@ -18,7 +18,7 @@ export interface Lesson {
 export const LessonService = {
     async listLessons(filters?: { startDate?: string; endDate?: string, classId?: string }): Promise<Lesson[]> {
         const { data } = await api.get("/lessons", { params: filters });
-        return data;
+        return data.data || data;
     },
 
     async getUpcomingLessons(): Promise<Lesson[]> {

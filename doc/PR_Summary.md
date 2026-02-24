@@ -1,86 +1,37 @@
-# PR Summary - Fix R2 Upload CORS Error in Production
+# PR Summary
 
-**Branch**: `fix/r2-cors-production`
-**Data**: 2026-01-30
+## 🎯 Resumo da Solução
+Esta Pull Request engloba as atualizações mais recentes focadas na estabilidade do módulo de conteúdo e no aprimoramento da API com a introdução de paginação real e validações robustas. Além disso, incluímos adições importantes ao nosso roadmap de produto.
 
-## Overview
+## 🛠 Alterações Detalhadas
 
-Este PR corrige o erro de upload de conteúdo para o Cloudflare R2 Bucket em ambiente de produção. O erro manifestava-se como "Upload failed: network error" e era causado por uma combinação de configuração CORS insuficiente e credenciais truncadas.
+### 1. Correção e Aprimoramento do Módulo de Conteúdo (Frontend)
+Foi implementada uma refatoração no formulário de criação de conteúdo do professor (`ProfessorContent.tsx`), introduzindo o fluxo completo de upload de arquivos de vídeo:
+- **Upload de Vídeo Direto**: Adicionada a capacidade de selecionar e fazer o upload direto de arquivos de vídeo no navegador, ao invés de depender apenas da colagem de links externos.
+- **Validação Condicional**: O campo `fileUrl` tornou-se opcional (`z.string().url().optional()`) para suportar a nova mecânica, onde a URL é gerada nos bastidores após o upload ser concluído.
+- **Gestão de Estado e Feedback**: Inseridos novos estados (`isUploading`, `selectedFile`) para fornecer feedback visual ao usuário com o texto "Enviando Vídeo..." e desabilitação apropriada dos botões para evitar duplo clique. 
+- **Tratamento de Erros de Upload**: Tratativa compreensiva contra falhas de envio (ex: interceptando erros `413 Payload Too Large` e `500+`).
+- **Comportamentos Específicos por Tipo**: Se o `contentType` selecionado na interface for "document" ou "link", o formulário reverte automaticamente para colher uma URL padrão.
 
-## Technical Details
+### 2. Implementação de Paginação e Validação (Backend)
+As listagens tanto de aulas quanto de conteúdos da biblioteca deixaram de utilizar *mock limiters* explícitos e agora utilizam fluxo padronizado de paginação.
+- **Zod Schema Validation**: Adicionados schemas de validação rígidos nos controllers (`ContentController.ts` e `LessonController.ts`), extraindo a tipagem dos filtros e protegendo para os parâmetros `page` e `limit`. Validações retornam formatação clara de `400 Bad Request` com a estrutura de erros do erro caso não atendidas.
+- **Paginação Real Integrada (`findAndCount`)**: Os serviços (`ContentService.ts` e `LessonService.ts`) foram ajustados para utilizar `skip` e `take`. A resposta agora envolve os resultados em um array `data`, embalado num envelope de `pagination` contendo informações vitais como a página atual, limite, total de registros, e o total de páginas (`totalPages`).
 
-### 1. CORS Configuration (`configure-cors.ts`)
-**Problema**:
-Requisições XMLHttpRequest de `https://jiu-platform.vercel.app` para o R2 bucket eram bloqueadas com:
-```
-Access to XMLHttpRequest at 'https://[...].r2.cloudflarestorage.com/...' 
-from origin 'https://jiu-platform.vercel.app' has been blocked by CORS policy: 
-No 'Access-Control-Allow-Origin' header is present on the requested resource.
-```
+### 3. Planejamento do Produto (TODO.md)
+Adicionada uma enorme carga de novas especificações, tarefas e Requisitos (Funcionais e Não-Funcionais) de Fases Futuras para o aplicativo:
+- Estruturação do Componente de **Video Analytics** (RFV-024).
+- Especificação de **Recursos Avançados** como visualização em Múltiplos Ângulos (RFV-017), Loop de Trecho (RFV-014), Câmera Lenta (RFV-015) e Comparação de Vídeos.
+- Adição de propostas voltadas a **Playback Offline**, **Transcrição Automática** e um robusto **Plano de Testes de Aceitação** (Performance, Cross-Browser e Acessibilidade).
 
-**Solução**: 
-Adicionado o domínio de produção aos `AllowedOrigins` na configuração CORS do bucket.
+### 4. Adaptação do Frontend à Paginação
+- **Ajustes de Interceptação nos Services**: Modificação nos arquivos `content.service.ts` e `lesson.service.ts` (na pasta `jiu-app/src/services`) para acessar corretamente o array `data` vindo da nova resposta paginada do backend (`{ data, pagination }`). Essa adaptação isolada nos *services* assegura que os componentes visuais que mapeiam estes recursos (`.map`) continuem funcionando sem precisar de refatoração, mantendo a aplicação responsiva e retrocompatível.
 
-```diff
-  AllowedOrigins: [
-      "http://localhost:5173",
-      "http://localhost:3000",
-      "http://localhost:3002",
--     "http://127.0.0.1:5173"
-+     "http://127.0.0.1:5173",
-+     "https://jiu-platform.vercel.app"
-  ]
-```
+## 🧪 Como Testar?
+1. Acesse o **Painel do Professor**.
+2. Clique em adicionar novo Conteúdo e altere o Tipo para **Vídeo**. Verifique se a opção de fazer upload de um arquivo local é exibida.
+3. Teste o upload com um vídeo válido e avalie as validações. Em seguida, selecione os tipos "Documento" ou "Link" e valide se o campo volta a solicitar apenas a URL textual.
+4. Execute as listagens da API (`/content/library` e `/lessons`) passando diferentes query paramets (ex: `?page=2&limit=5`) e observe o novo formato da carga útil (envelope contendo objeto `pagination`).
 
-### 2. Credential Issue Identified (Critical)
-**Problema Observado**:
-Durante a análise do log de erro, foi identificado que o `R2_ACCESS_KEY_ID` presente na URL de upload assinada está **truncado**:
-- **Log**: `...bf` (31 caracteres)
-- **Esperado**: `...bf9` (32 caracteres, conforme `.env` local)
-
-**Impacto**:
-Este truncamento causa erro `403 Access Denied` da Cloudflare, que o navegador reporta como erro de CORS/Network.
-
-**Ação Requerida**: 
-A variável de ambiente `R2_ACCESS_KEY_ID` deve ser corrigida nas configurações do projeto Vercel para incluir a chave completa de 32 caracteres.
-
-## Implementation Steps
-
-### Para aplicar a correção CORS:
-1. **Obter credenciais de Admin** do R2 (se as atuais não tiverem permissão):
-   - Acesse Cloudflare Dashboard → R2 → API Tokens
-   - Crie token com permissão "Admin Read & Write"
-   - Atualize temporariamente `.env` local
-
-2. **Executar script de configuração**:
-   ```bash
-   npx ts-node scripts/configure-cors.ts
-   ```
-   
-3. **Verificar sucesso**:
-   O script deve exibir "Successfully configured CORS!" (sem erros de `AccessDenied`)
-
-### Para corrigir as credenciais (OBRIGATÓRIO):
-1. Acessar **Vercel Dashboard** → Projeto → Settings → Environment Variables
-2. Editar `R2_ACCESS_KEY_ID`
-3. Colar a chave completa (32 caracteres): 
-4. Redesploar a aplicação para aplicar a mudança
-
-## Verification
-
-### CORS Configuration
-- ✅ Script `configure-cors.ts` atualizado
-- ⏳ Execução do script (requer credenciais Admin)
-
-### Production Upload
-- ⏳ Após correção da variável na Vercel, testar upload de vídeo/arquivo em produção
-- ✅ Upload deve completar sem erro de CORS
-- ✅ Console do navegador não deve exibir erros de "Access-Control-Allow-Origin"
-
-## Conclusion
-
-A solução envolve duas ações:
-1. **CORS**: Configuração do bucket R2 para aceitar requisições do domínio de produção.
-2. **Credenciais**: Correção urgente da variável `R2_ACCESS_KEY_ID` na Vercel (provavelmente o problema principal).
-
-Após aplicadas ambas as correções, uploads de conteúdo em produção devem funcionar normalmente.
+## ⚠️ Pontos de Atenção
+- O formato de resposta dos endpoints de listagem de conteúdo e das lições não é mais um array puro, mas um objeto com `{ data, pagination }`. Qualquer interface (frontend) consumindo essas APIs tem que ser adaptada para ler os dados do novo caminho `response.data`.
