@@ -61,7 +61,24 @@ export class LessonController {
 
     static async list(req: Request, res: Response) {
         try {
-            const result = await LessonService.listLessons(req.query);
+            // Define validation schema for query parameters
+            const listLessonsSchema = z.object({
+                classId: z.string().uuid().optional(),
+                status: z.string().optional(),
+                startDate: z.string().optional(),
+                endDate: z.string().optional(),
+                page: z.coerce.number().int().min(1).optional().default(1),
+                limit: z.coerce.number().int().min(1).max(100).optional().default(20)
+            });
+
+            // Validate query parameters
+            const validation = listLessonsSchema.safeParse(req.query);
+
+            if (!validation.success) {
+                return res.status(400).json({ error: validation.error.format() });
+            }
+
+            const result = await LessonService.listLessons(validation.data);
             res.json(result);
         } catch (error: any) {
             res.status(400).json({ error: error.message });

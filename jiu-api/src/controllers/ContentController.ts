@@ -36,7 +36,21 @@ export class ContentController {
 
     static async getLibrary(req: Request, res: Response) {
         try {
-            const result = await ContentService.listLibrary(req.query);
+            // Define validation schema for query parameters
+            const { z } = require("zod");
+            const getLibrarySchema = z.object({
+                page: z.coerce.number().int().min(1).optional().default(1),
+                limit: z.coerce.number().int().min(1).max(100).optional().default(20)
+            });
+
+            // Validate query parameters
+            const validation = getLibrarySchema.safeParse(req.query);
+
+            if (!validation.success) {
+                return res.status(400).json({ error: validation.error.format() });
+            }
+
+            const result = await ContentService.listLibrary(validation.data);
             res.json(result);
         } catch (error: any) {
             res.status(400).json({ error: error.message });
