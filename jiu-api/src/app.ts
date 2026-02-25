@@ -3,6 +3,7 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
+import compression from "compression";
 import { rateLimit } from "express-rate-limit";
 
 import authRoutes from "./routes/auth.routes";
@@ -57,6 +58,7 @@ const globalLimiter = rateLimit({
 // Apply the rate limiting middleware to all requests.
 app.use("/api", globalLimiter);
 
+app.use(compression());
 app.use(express.json());
 
 app.use("/api/auth", authRoutes);

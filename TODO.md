@@ -28,16 +28,16 @@ Derived from `doc/performance_specs.md`.
 
 ## Checklist de Implementação Imediata
 
-- [ ] **Compression Middleware**
+- [x] **Compression Middleware**
     - Instalar e configurar `compression` no Express app.
 
 - [x] **Database Indexing**
     - Adicionar índices (@Index) nas tabelas `scheduled_lessons`, `attendances`, `class_enrollments` para FKs e colunas de filtro frequente.
 
-- [ ] **Pagination - LessonService**
+- [x] **Pagination - LessonService**
     - Refatorar `LessonService.listLessons` para aceitar `page` e `limit`.
 
-- [ ] **Pagination - ContentService**
+- [x] **Pagination - ContentService**
     - Refatorar `ContentService` para paginar conteúdos.
 
 - [x] **Slow Query Logging**
