@@ -81,3 +81,6 @@ Recomendamos configurar **dois projetos separados na Vercel**, ambos conectados 
 1.  Acesse a URL do Frontend.
 2.  Tente fazer login.
 3.  Se houver erros, verifique os **Logs** no painel da Vercel (tanto do Backend quanto do Frontend).
+
+
+aa
