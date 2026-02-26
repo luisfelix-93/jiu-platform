@@ -17,15 +17,25 @@ import * as path from "path";
 dotenv.config();
 
 const isProd = process.env.NODE_ENV === "production";
+const databaseUrl = process.env.DATABASE_URL;
+const useSSL = isProd || !!databaseUrl;
+const sslConfig = useSSL ? { rejectUnauthorized: false } : false;
+
+const baseConfig = databaseUrl
+    ? {
+          url: databaseUrl,
+      }
+    : {
+          host: process.env.DB_HOST || "localhost",
+          port: parseInt(process.env.DB_PORT || "5432"),
+          username: process.env.DB_USER || "postgres",
+          password: process.env.DB_PASSWORD || "postgres",
+          database: process.env.DB_NAME || "jiujitsu_dev",
+      };
 
 export const AppDataSource = new DataSource({
     type: "postgres",
-    url: process.env.DATABASE_URL,
-    host: process.env.DB_HOST || "localhost",
-    port: parseInt(process.env.DB_PORT || "5432"),
-    username: process.env.DB_USER || "postgres",
-    password: process.env.DB_PASSWORD || "postgres",
-    database: process.env.DB_NAME || "jiujitsu_prod",
+    ...baseConfig,
     synchronize: !isProd,
     logging: isProd ? ["error", "warn", "schema", "migration"] : ["error", "warn", "schema"],
     maxQueryExecutionTime: 1000,
@@ -35,7 +45,8 @@ export const AppDataSource = new DataSource({
         idleTimeoutMillis: 30000,
         connectionTimeoutMillis: 2000,
         acquireTimeoutMillis: 60000,
-        ssl: isProd ? { rejectUnauthorized: false } : false,
+        ssl: sslConfig,
+        family: 4,
     },
     entities: [
         User,
@@ -51,5 +62,5 @@ export const AppDataSource = new DataSource({
     ],
     migrations: [path.join(__dirname, "migrations", "*.{ts,js}")],
     subscribers: [],
-    ssl: isProd ? { rejectUnauthorized: false } : false,
+    ssl: sslConfig,
 });
