@@ -14,8 +14,8 @@ Foi desenvolvida uma melhoria para permitir que professores que ainda não alcan
 
 ### Backend (`jiu-api`)
 - **Ajustes de Autenticação (`AuthService.ts`)**
-  - Corrigido um bug onde a propriedade `beltColor` do usuário não estava sendo injetada no payload JWT nem no retorno puro das funções de `login` e `register`.
-  - Essa correção foi vital para o frontend saber a cor da faixa do professor logo no momento em que ele acessa a plataforma, permitindo ao `ProfessorLayout` fazer a condicional exibição corretamente.
+  - Corrigido um bug onde a propriedade `beltColor` do usuário não estava sendo incluída no objeto `user` retornado pelas funções de `login` e `register`. O payload JWT em si não foi alterado e continua contendo apenas `{ userId, email, role }`.
+  - Essa correção permite que o frontend receba `beltColor` diretamente na resposta de autenticação. O `ProfessorLayout` acessa esse valor via `/users/me` (chamado em `checkAuth()`), viabilizando a exibição condicional dos itens de menu.
 - **Validação de Regras de Negócio**
   - Revisados os serviços de `AttendanceService` e `LessonService`.
   - Pôde-se atestar que os endpoints subjacentes não impõem restrições hardcoded que inviabilizem um usuário do tipo `role: 'professor'` de interagir com recursos como se fosse aluno, desde que faça consultas ao seu próprio `userId`.
