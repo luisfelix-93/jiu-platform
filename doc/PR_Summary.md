@@ -1,22 +1,26 @@
-# Pull Request Summary: Fix Neon DB SSL Connection
+# Pull Request Summary: Acesso de Professores a Funcionalidades de Aluno
 
-## 🐛 O Que Foi Corrigido
-Ocorria o seguinte erro de certificado SSL ao tentar conectar a API em produção (Vercel) com o banco de dados Postgres gerenciado no Neon:
-
-```
-Error during Data Source initialization: Error: self-signed certificate in certificate chain
-  code: 'SELF_SIGNED_CERT_IN_CHAIN'
-```
-
-### 🔍 Causa Raiz
-A conexão falhava pois o Node.js não estava validando o certificado com sucesso (considerando-o *self-signed*) porque alguns drivers ou strings de conexão via URI (como `?sslmode=require` no final da URL do banco) acabam sobrescrevendo configurações nativas do objeto de conexão dentro do TypeORM se a opção explícita de SSL não for injetada da maneira correta na camada subjacente.
-
-A nossa configuração de SSL atual do TypeORM (`ssl: isProd ? { rejectUnauthorized: false } : false`) estava sendo definida apenas no objeto principal (raiz) das configurações. Porém, na inicialização instanciada por uma URL formatada, essa configuração básica muitas vezes era interpretada de forma estrita ou sobrescrita, lançando a exceção.
+## 🚀 O Que Foi Implementado
+Foi desenvolvida uma melhoria para permitir que professores que ainda não alcançaram a faixa preta (ex: faixas roxas e marrons) possam acessar as funcionalidades de alunos. Anteriormente, o painel do professor (`ProfessorLayout`) era estritamente focado em gestão e não permitia que esses instrutores fizessem check-in em aulas de terceiros ou visualizassem o seu próprio progresso de graduação.
 
 ## 🛠️ Modificações Realizadas
-- Arquivo `jiu-api/src/data-source.ts`
-  - Foi adicionada a configuração de SSL explícita: `ssl: isProd ? { rejectUnauthorized: false } : false` diretamente dentro do objeto de conexão bruta `extra: {}` (que é repassada pelo driver do TypeORM ao driver básico `pg` do Node).
-  - Dessa forma garantimos que a propriedade `rejectUnauthorized: false` assumirá a mais alta prioridade, neutralizando restrições conflitantes provenientes da *connection string* e contornando assim a rejeição da chain de certificados auto-assinada do Neon (ou semelhantes).
+
+### Frontend (`jiu-app`)
+- **Rotas Adicionais (`App.tsx`)**
+  - Foram injetadas as sub-rotas `/professor/calendario-aluno` e `/professor/progresso` dentro do grupo de rotas protegidas do Professor, permitindo que os componentes `<StudentCalendar />` e `<StudentProgress />` sejam renderizados mantendo o layout de navegação correto.
+- **Menu Dinâmico (`ProfessorLayout.tsx`)**
+  - Implementada lógica no menu lateral para renderizar as opções **"Calendário (Aluno)"** e **"Meu Progresso"** de forma condicional.
+  - O sistema agora verifica através do estado global (`useAuthStore`) a cor da faixa (`beltColor`). Se for diferente de `black`, `coral` ou `red`, os itens são exibidos para o usuário.
+
+### Backend (`jiu-api`)
+- **Ajustes de Autenticação (`AuthService.ts`)**
+  - Corrigido um bug onde a propriedade `beltColor` do usuário não estava sendo incluída no objeto `user` retornado pelas funções de `login` e `register`. O payload JWT em si não foi alterado e continua contendo apenas `{ userId, email, role }`.
+  - Essa correção permite que o frontend receba `beltColor` diretamente na resposta de autenticação. O `ProfessorLayout` acessa esse valor via `/users/me` (chamado em `checkAuth()`), viabilizando a exibição condicional dos itens de menu.
+- **Validação de Regras de Negócio**
+  - Revisados os serviços de `AttendanceService` e `LessonService`.
+  - Pôde-se atestar que os endpoints subjacentes não impõem restrições hardcoded que inviabilizem um usuário do tipo `role: 'professor'` de interagir com recursos como se fosse aluno, desde que faça consultas ao seu próprio `userId`.
 
 ## ✅ Como Validar
-Após o deploy destas modificações para a Vercel, monitorar os logs de inicialização da API (Serverless Function). O output deverá mostrar sucesso na conexão sem a exception de `SELF_SIGNED_CERT_IN_CHAIN`, permitindo as operações normais do banco de dados na branch de produção.
+1. Acesse o sistema utilizando uma conta cadastrada com `role: 'professor'` e `beltColor: 'brown'` (ou qualquer faixa não-preta).
+2. Observe que no menu lateral esquerdo constarão as novas opções: **Calendário (Aluno)** e **Meu Progresso**.
+3. Acesse com um professor `beltColor: 'black'` e confirme que o menu não polui a navegação com as opções de aluno.

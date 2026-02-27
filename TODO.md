@@ -218,3 +218,24 @@ Derived from `jiu-app/docs/feature.specs.md`.
     - Aumento de 25% no tempo médio de visualização.
     - Redução de 15% na taxa de rejeição (saída antes de 30s).
     - 80% dos usuários usando pelo menos um recurso avançado após 30 dias.
+
+# Acesso de Professores a Funcionalidades de Aluno (To Do)
+
+Derived from `issues/enhancement.spec.md`.
+
+## Frontend (`jiu-app`)
+
+- [x] **ProfessorLayout (`src/components/layout/ProfessorLayout.tsx`)**
+    - Adicionar item de menu "Calendário (Aluno)".
+    - Adicionar item de menu "Meu Progresso".
+    - Condicionar a exibição desses itens verificar se a cor da faixa do professor não é preta (`user?.beltColor !== 'black'`).
+
+- [x] **Roteamento (`src/App.tsx`)**
+    - Configurar `/professor/calendario-aluno` para renderizar `<StudentCalendar />`.
+    - Configurar `/professor/progresso` para renderizar `<StudentProgress />`.
+
+## Backend (`jiu-api`)
+
+- [x] **Permissões de Aulas e Presença**
+    - Validar no `lesson.service.ts` e `attendance.service.ts` se um professor pode recuperar turmas gerais e realizar check-in em aulas ministradas por outros professores, da mesma forma que um aluno listaria e faria check-in em suas aulas.
+
