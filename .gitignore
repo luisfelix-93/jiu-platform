@@ -56,3 +56,5 @@ jiu-api/src/scripts
 
 # Logs
 *.log 
+
+issues/

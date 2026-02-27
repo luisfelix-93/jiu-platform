@@ -107,7 +107,7 @@ export class AuthService {
         });
         await refreshTokenRepository.save(tokenEntity);
 
-        return { user: { id: user.id, email: user.email, name: user.name, role: user.role }, accessToken, refreshToken };
+        return { user: { id: user.id, email: user.email, name: user.name, role: user.role, beltColor: user.beltColor }, accessToken, refreshToken };
     }
 
     static async forgotPassword(email: string) {

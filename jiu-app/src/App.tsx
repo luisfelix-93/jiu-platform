@@ -117,6 +117,8 @@ function App() {
           <Route path="graduacao" element={<Graduation />} />
           <Route path="conteudos" element={<ProfessorContent />} />
           <Route path="perfil" element={<ProfessorProfile />} />
+          <Route path="calendario-aluno" element={<StudentCalendar />} />
+          <Route path="progresso" element={<StudentProgress />} />
         </Route>
 
         {/* Protected Admin Routes */}
