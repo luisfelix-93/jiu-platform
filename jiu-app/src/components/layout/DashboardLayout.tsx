@@ -4,7 +4,6 @@ import { useAuthStore } from '../../stores/useAuthStore';
 import { cn } from '../../lib/utils';
 import { Menu, X, LogOut, LayoutDashboard } from 'lucide-react';
 import { Button } from '../ui/Button';
-import { ThemeToggle } from '../ThemeToggle';
 import { translateBelt } from '../../utils/belt';
 
 interface NavItem {
@@ -98,14 +97,10 @@ export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutPr
                     </nav>
 
                     {/* Footer Actions */}
-                    <div className="p-4 border-t border-neutral-200 dark:border-neutral-800 space-y-2">
-                        <div className="flex items-center justify-between px-2">
-                            <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Tema</span>
-                            <ThemeToggle />
-                        </div>
+                    <div className="p-4 border-t border-neutral-200 space-y-2">
                         <Button
                             variant="ghost"
-                            className="w-full justify-start text-red-600 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-900/20"
+                            className="w-full justify-start text-red-600 hover:bg-red-50 hover:text-red-700"
                             onClick={handleLogout}
                         >
                             <LogOut className="mr-2 h-4 w-4" />

@@ -239,3 +239,35 @@ Derived from `issues/enhancement.spec.md`.
 - [x] **Permissões de Aulas e Presença**
     - Validar no `lesson.service.ts` e `attendance.service.ts` se um professor pode recuperar turmas gerais e realizar check-in em aulas ministradas por outros professores, da mesma forma que um aluno listaria e faria check-in em suas aulas.
 
+# Notificação de Validação de Senha e Login (To Do)
+
+Derived from `docs/notify-pass.specs.md`.
+
+## Fase 1: Padronização da Validação
+
+- [ ] **Atualizar schemas frontend**
+    - Alterar validação de senha para `min(8)` em `Register.tsx`.
+    - Alterar validação de senha para `min(8)` (ou adequar ao backend) em `Login.tsx`.
+    - Alterar validação de senha para `min(8)` em `ResetPassword.tsx`.
+
+- [ ] **Alinhar backend auth.schema.ts**
+    - Garantir que `loginSchema` e `registerSchema` exijam mínimo de 8 caracteres.
+
+## Fase 2: Implementação de Notificações (Toast)
+
+- [ ] **Instalar biblioteca de Toast**
+    - Instalar `sonner` no `jiu-app`.
+    - Configurar o provedor `<Toaster />` no `main.tsx`.
+
+- [ ] **Notificações em Tempo Real e Feedback**
+    - Adicionar `toast.error` para login incorreto em `Login.tsx`.
+    - Adicionar feedback visual/toast imediato quando a senha não atender aos 8 caracteres no registro.
+    - Personalizar mensagens em português para cada contexto.
+
+## Fase 3: Testes e Validação
+
+- [ ] **Testes de Validação**
+    - Validar schemas Zod atualizados.
+    - Testar fluxo completo de login e registro garantindo que os toasts aparecem corretamente.
+
+
