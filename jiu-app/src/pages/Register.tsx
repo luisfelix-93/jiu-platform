@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -44,7 +44,7 @@ export const Register = () => {
         handleSubmit,
         watch,
         setValue,
-        formState: { errors },
+        formState: { errors, touchedFields },
     } = useForm<RegisterSchema>({
         resolver: zodResolver(registerSchema),
         defaultValues: {
@@ -54,6 +54,25 @@ export const Register = () => {
     });
 
     const selectedRole = watch('role');
+
+    // Exibir toasts para erros de validação em tempo real
+    useEffect(() => {
+        if (touchedFields.name && errors.name) {
+            toast.error(errors.name.message);
+        }
+    }, [touchedFields.name, errors.name]);
+
+    useEffect(() => {
+        if (touchedFields.email && errors.email) {
+            toast.error(errors.email.message);
+        }
+    }, [touchedFields.email, errors.email]);
+
+    useEffect(() => {
+        if (touchedFields.password && errors.password) {
+            toast.error(errors.password.message);
+        }
+    }, [touchedFields.password, errors.password]);
 
     const onSubmit = async (data: RegisterSchema) => {
         setIsLoading(true);

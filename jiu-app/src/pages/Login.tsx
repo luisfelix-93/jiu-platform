@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -25,10 +25,23 @@ export const Login = () => {
     const {
         register,
         handleSubmit,
-        formState: { errors },
+        formState: { errors, touchedFields },
     } = useForm<LoginSchema>({
         resolver: zodResolver(loginSchema),
     });
+
+    // Exibir toasts para erros de validação em tempo real
+    useEffect(() => {
+        if (touchedFields.email && errors.email) {
+            toast.error(errors.email.message);
+        }
+    }, [touchedFields.email, errors.email]);
+
+    useEffect(() => {
+        if (touchedFields.password && errors.password) {
+            toast.error(errors.password.message);
+        }
+    }, [touchedFields.password, errors.password]);
 
     const onSubmit = async (data: LoginSchema) => {
         setIsLoading(true);

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -31,10 +31,23 @@ export const ResetPassword = () => {
     const {
         register,
         handleSubmit,
-        formState: { errors },
+        formState: { errors, touchedFields },
     } = useForm<ResetPasswordSchema>({
         resolver: zodResolver(resetPasswordSchema),
     });
+
+    // Exibir toasts para erros de validação em tempo real
+    useEffect(() => {
+        if (touchedFields.password && errors.password) {
+            toast.error(errors.password.message);
+        }
+    }, [touchedFields.password, errors.password]);
+
+    useEffect(() => {
+        if (touchedFields.confirmPassword && errors.confirmPassword) {
+            toast.error(errors.confirmPassword.message);
+        }
+    }, [touchedFields.confirmPassword, errors.confirmPassword]);
 
     const onSubmit = async (data: ResetPasswordSchema) => {
         if (!token) {
