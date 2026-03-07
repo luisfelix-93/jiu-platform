@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { toast } from 'sonner';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
@@ -10,8 +11,8 @@ import { AuthService } from '../services/auth.service';
 
 const resetPasswordSchema = z
     .object({
-        password: z.string().min(6, 'Senha deve ter no mínimo 6 caracteres'),
-        confirmPassword: z.string().min(6, 'Senha deve ter no mínimo 6 caracteres'),
+        password: z.string().min(8, 'Senha deve ter no mínimo 8 caracteres'),
+        confirmPassword: z.string().min(8, 'Senha deve ter no mínimo 8 caracteres'),
     })
     .refine((data) => data.password === data.confirmPassword, {
         message: 'As senhas não coincidem',
@@ -37,7 +38,9 @@ export const ResetPassword = () => {
 
     const onSubmit = async (data: ResetPasswordSchema) => {
         if (!token) {
-            setErrorMessage('Token inválido ou expirado.');
+            const errorMsg = 'Token inválido ou expirado.';
+            setErrorMessage(errorMsg);
+            toast.error(errorMsg);
             return;
         }
 
@@ -45,13 +48,13 @@ export const ResetPassword = () => {
         setErrorMessage('');
         try {
             await AuthService.resetPassword(token, data.password);
-
-            // Redirect to login with success message (could use toast or state)
-            // For now, simple alert or redirect
+            toast.success('Senha redefinida com sucesso! Faça login com sua nova senha.');
             navigate('/login');
         } catch (error: any) {
             console.error('Reset password failed', error);
-            setErrorMessage(error.response?.data?.error || 'Falha ao redefinir a senha.');
+            const errorMsg = error.response?.data?.error || 'Falha ao redefinir a senha.';
+            setErrorMessage(errorMsg);
+            toast.error(errorMsg);
         } finally {
             setIsLoading(false);
         }

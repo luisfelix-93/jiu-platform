@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useNavigate, Link } from 'react-router-dom';
+import { toast } from 'sonner';
 import { useAuthStore } from '../stores/useAuthStore';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -11,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card'
 
 const loginSchema = z.object({
     email: z.string().email('Email inválido'),
-    password: z.string().min(6, 'Senha deve ter no mínimo 6 caracteres'),
+    password: z.string().min(1, 'Senha é obrigatória'),
 });
 
 type LoginSchema = z.infer<typeof loginSchema>;
@@ -44,8 +45,10 @@ export const Login = () => {
             } else if (user?.role === 'admin') {
                 navigate('/admin');
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Login failed', error);
+            const errorMessage = error.response?.data?.error || 'Email ou senha inválidos. Verifique suas credenciais e tente novamente.';
+            toast.error(errorMessage);
         } finally {
             setIsLoading(false);
         }

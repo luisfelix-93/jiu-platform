@@ -245,21 +245,21 @@ Derived from `docs/notify-pass.specs.md`.
 
 ## Fase 1: Padronização da Validação
 
-- [ ] **Atualizar schemas frontend**
+- [x] **Atualizar schemas frontend**
     - Alterar validação de senha para `min(8)` em `Register.tsx`.
-    - Alterar validação de senha para `min(8)` (ou adequar ao backend) em `Login.tsx`.
+    - Alterar validação de senha para `min(1)` (apenas obrigatória) em `Login.tsx`.
     - Alterar validação de senha para `min(8)` em `ResetPassword.tsx`.
 
-- [ ] **Alinhar backend auth.schema.ts**
+- [x] **Alinhar backend auth.schema.ts**
     - Garantir que `loginSchema` e `registerSchema` exijam mínimo de 8 caracteres.
 
 ## Fase 2: Implementação de Notificações (Toast)
 
-- [ ] **Instalar biblioteca de Toast**
+- [x] **Instalar biblioteca de Toast**
     - Instalar `sonner` no `jiu-app`.
     - Configurar o provedor `<Toaster />` no `main.tsx`.
 
-- [ ] **Notificações em Tempo Real e Feedback**
+- [x] **Notificações em Tempo Real e Feedback**
     - Adicionar `toast.error` para login incorreto em `Login.tsx`.
     - Adicionar feedback visual/toast imediato quando a senha não atender aos 8 caracteres no registro.
     - Personalizar mensagens em português para cada contexto.
