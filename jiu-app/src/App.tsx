@@ -7,7 +7,6 @@ import { Register } from './pages/Register';
 import { ForgotPassword } from './pages/ForgotPassword';
 import { ResetPassword } from './pages/ResetPassword';
 import { useAuthStore } from './stores/useAuthStore';
-import { useThemeStore } from './stores/useThemeStore';
 import { StudentLayout } from './pages/student/StudentLayout';
 import { StudentHome } from './pages/student/StudentHome';
 import { StudentCalendar } from './pages/student/StudentCalendar';
@@ -51,26 +50,10 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode;
 
 function App() {
   const { checkAuth } = useAuthStore();
-  const { theme } = useThemeStore();
 
   useEffect(() => {
     checkAuth();
   }, [checkAuth]);
-
-  useEffect(() => {
-    const root = window.document.documentElement;
-    root.classList.remove('light', 'dark');
-
-    if (theme === 'system') {
-      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches
-        ? 'dark'
-        : 'light';
-      root.classList.add(systemTheme);
-      return;
-    }
-
-    root.classList.add(theme);
-  }, [theme]);
 
   return (
     <BrowserRouter>

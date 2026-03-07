@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useNavigate, Link } from 'react-router-dom';
+import { toast } from 'sonner';
 import { AuthService } from '../services/auth.service';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -11,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card'
 const registerSchema = z.object({
     name: z.string().min(3, "Nome deve ter no mínimo 3 caracteres"),
     email: z.string().email('Email inválido'),
-    password: z.string().min(6, 'Senha deve ter no mínimo 6 caracteres'),
+    password: z.string().min(8, 'Senha deve ter no mínimo 8 caracteres'),
     role: z.enum(["aluno", "professor"]),
     beltColor: z.string().optional(),
     birthDate: z.string().optional(),
@@ -43,7 +44,7 @@ export const Register = () => {
         handleSubmit,
         watch,
         setValue,
-        formState: { errors },
+        formState: { errors, touchedFields },
     } = useForm<RegisterSchema>({
         resolver: zodResolver(registerSchema),
         defaultValues: {
@@ -54,15 +55,37 @@ export const Register = () => {
 
     const selectedRole = watch('role');
 
+    // Exibir toasts para erros de validação em tempo real
+    useEffect(() => {
+        if (touchedFields.name && errors.name) {
+            toast.error(errors.name.message);
+        }
+    }, [touchedFields.name, errors.name]);
+
+    useEffect(() => {
+        if (touchedFields.email && errors.email) {
+            toast.error(errors.email.message);
+        }
+    }, [touchedFields.email, errors.email]);
+
+    useEffect(() => {
+        if (touchedFields.password && errors.password) {
+            toast.error(errors.password.message);
+        }
+    }, [touchedFields.password, errors.password]);
+
     const onSubmit = async (data: RegisterSchema) => {
         setIsLoading(true);
         setError('');
         try {
             await AuthService.register(data);
-            navigate('/login', { state: { message: 'Cadastro realizado com sucesso! Faça login.' } });
+            toast.success('Cadastro realizado com sucesso! Faça login para continuar.');
+            navigate('/login');
         } catch (err: any) {
             console.error('Registration failed', err);
-            setError(err.response?.data?.error || 'Falha ao realizar cadastro. Tente novamente.');
+            const errorMessage = err.response?.data?.error || 'Falha ao realizar cadastro. Tente novamente.';
+            setError(errorMessage);
+            toast.error(errorMessage);
         } finally {
             setIsLoading(false);
         }

@@ -1,5 +1,4 @@
 import { Outlet } from 'react-router-dom';
-import { ThemeToggle } from '../ThemeToggle';
 
 export const AuthLayout = () => {
     return (
@@ -20,10 +19,7 @@ export const AuthLayout = () => {
             </div>
 
             {/* Right Side - Form */}
-            <div className="flex items-center justify-center p-8 bg-neutral-50 dark:bg-neutral-900 relative">
-                <div className="absolute top-4 right-4">
-                    <ThemeToggle />
-                </div>
+            <div className="flex items-center justify-center p-8 bg-neutral-50 relative">
                 <div className="w-full max-w-sm">
                     <Outlet />
                 </div>
