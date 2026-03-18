@@ -45,7 +45,7 @@ export const StudentCalendar = () => {
     useEffect(() => {
         const fetchLessons = async () => {
             try {
-                const lessons = await LessonService.listLessons();
+                const lessons = await LessonService.listLessons({ limit: 100 });
                 const calendarEvents = lessons.map((lesson: any) => {
                     // Combine date and time
                     const startDateTime = new Date(`${lesson.date.split('T')[0]}T${lesson.startTime}`);

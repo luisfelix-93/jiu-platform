@@ -22,7 +22,7 @@ export const ProfessorAttendance = () => {
     useEffect(() => {
         const fetchLessons = async () => {
             try {
-                const data = await LessonService.listLessons();
+                const data = await LessonService.listLessons({ limit: 50, orderDirection: 'DESC' });
                 // Filter for recent/upcoming or just show all for MVP
                 // Sort by date desc
                 setLessons(data.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
@@ -35,12 +35,21 @@ export const ProfessorAttendance = () => {
         fetchLessons();
     }, []);
 
-    // Auto-select lesson from URL param
+
+    // Auto-select lesson from URL param (with fallback fetch if not in paginated list)
     useEffect(() => {
         if (lessons.length > 0 && lessonIdParam && !selectedLesson) {
             const preselected = lessons.find(l => l.id === lessonIdParam);
             if (preselected) {
                 handleLessonSelect(preselected);
+            } else {
+                // Lesson not in paginated list — fetch it individually
+                LessonService.getLessonById(lessonIdParam).then(lesson => {
+                    setLessons(prev => [lesson, ...prev]);
+                    handleLessonSelect(lesson);
+                }).catch(err => {
+                    console.error("Failed to fetch lesson by ID:", err);
+                });
             }
         }
     }, [lessons, lessonIdParam]);
