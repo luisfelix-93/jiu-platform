@@ -24,8 +24,8 @@ export const ProfessorAttendance = () => {
             try {
                 const data = await LessonService.listLessons({ limit: 50, orderDirection: 'DESC' });
                 // Filter for recent/upcoming or just show all for MVP
-                // Sort by date desc
-                setLessons(data.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+                // Use backend ordering to keep ordering logic in one place
+                setLessons(data);
             } catch (error) {
                 console.error("Failed to fetch lessons", error);
             } finally {
