@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -52,9 +52,9 @@ export const ProfessorAttendance = () => {
                 });
             }
         }
-    }, [lessons, lessonIdParam]);
+    }, [lessons, lessonIdParam, selectedLesson, handleLessonSelect]);
 
-    const fetchAttendance = async (lessonId: string) => {
+    const fetchAttendance = useCallback(async (lessonId: string) => {
         try {
             const data = await AttendanceService.getLessonAttendance(lessonId);
             setAttendanceList(data);
@@ -62,12 +62,12 @@ export const ProfessorAttendance = () => {
             console.error("Failed to fetch attendance", error);
             setAttendanceList([]);
         }
-    };
+    }, []);
 
-    const handleLessonSelect = (lesson: Lesson) => {
+    const handleLessonSelect = useCallback((lesson: Lesson) => {
         setSelectedLesson(lesson);
         fetchAttendance(lesson.id);
-    };
+    }, [fetchAttendance]);
 
     const handleMarkAttendance = async (userId: string, status: 'present' | 'absent') => {
         if (!selectedLesson) return;
