@@ -36,6 +36,21 @@ export const ProfessorAttendance = () => {
     }, []);
 
 
+    const fetchAttendance = useCallback(async (lessonId: string) => {
+        try {
+            const data = await AttendanceService.getLessonAttendance(lessonId);
+            setAttendanceList(data);
+        } catch (error) {
+            console.error("Failed to fetch attendance", error);
+            setAttendanceList([]);
+        }
+    }, []);
+
+    const handleLessonSelect = useCallback((lesson: Lesson) => {
+        setSelectedLesson(lesson);
+        fetchAttendance(lesson.id);
+    }, [fetchAttendance]);
+
     // Auto-select lesson from URL param (with fallback fetch if not in paginated list)
     useEffect(() => {
         if (lessons.length > 0 && lessonIdParam && !selectedLesson) {
@@ -53,21 +68,6 @@ export const ProfessorAttendance = () => {
             }
         }
     }, [lessons, lessonIdParam, selectedLesson, handleLessonSelect]);
-
-    const fetchAttendance = useCallback(async (lessonId: string) => {
-        try {
-            const data = await AttendanceService.getLessonAttendance(lessonId);
-            setAttendanceList(data);
-        } catch (error) {
-            console.error("Failed to fetch attendance", error);
-            setAttendanceList([]);
-        }
-    }, []);
-
-    const handleLessonSelect = useCallback((lesson: Lesson) => {
-        setSelectedLesson(lesson);
-        fetchAttendance(lesson.id);
-    }, [fetchAttendance]);
 
     const handleMarkAttendance = async (userId: string, status: 'present' | 'absent') => {
         if (!selectedLesson) return;
