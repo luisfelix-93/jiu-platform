@@ -16,7 +16,7 @@ export class DashboardService {
         const upcomingLessons = await lessonRepository.find({
             where: { date: MoreThanOrEqual(new Date().toISOString().split('T')[0]) as any },
             relations: ["class", "professor"],
-            take: 5,
+            take: 20,
             order: { date: "ASC", startTime: "ASC" }
         });
 
@@ -24,7 +24,7 @@ export class DashboardService {
         const recentAttendance = await attendanceRepository.find({
             where: { userId },
             relations: ["lesson", "lesson.class"],
-            take: 5,
+            take: 20,
             order: { createdAt: "DESC" }
         });
 
@@ -51,7 +51,7 @@ export class DashboardService {
                 date: MoreThanOrEqual(new Date().toISOString().split('T')[0]) as any
             },
             relations: ["class"],
-            take: 10,
+            take: 20,
             order: { date: "ASC", startTime: "ASC" }
         });
 

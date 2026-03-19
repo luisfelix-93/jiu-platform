@@ -58,3 +58,4 @@ jiu-api/src/scripts
 *.log 
 
 issues/
+.agent/

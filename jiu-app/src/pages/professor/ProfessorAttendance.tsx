@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -22,10 +22,10 @@ export const ProfessorAttendance = () => {
     useEffect(() => {
         const fetchLessons = async () => {
             try {
-                const data = await LessonService.listLessons();
+                const data = await LessonService.listLessons({ limit: 50, orderDirection: 'DESC' });
                 // Filter for recent/upcoming or just show all for MVP
-                // Sort by date desc
-                setLessons(data.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+                // Use backend ordering to keep ordering logic in one place
+                setLessons(data);
             } catch (error) {
                 console.error("Failed to fetch lessons", error);
             } finally {
@@ -35,17 +35,8 @@ export const ProfessorAttendance = () => {
         fetchLessons();
     }, []);
 
-    // Auto-select lesson from URL param
-    useEffect(() => {
-        if (lessons.length > 0 && lessonIdParam && !selectedLesson) {
-            const preselected = lessons.find(l => l.id === lessonIdParam);
-            if (preselected) {
-                handleLessonSelect(preselected);
-            }
-        }
-    }, [lessons, lessonIdParam]);
 
-    const fetchAttendance = async (lessonId: string) => {
+    const fetchAttendance = useCallback(async (lessonId: string) => {
         try {
             const data = await AttendanceService.getLessonAttendance(lessonId);
             setAttendanceList(data);
@@ -53,12 +44,30 @@ export const ProfessorAttendance = () => {
             console.error("Failed to fetch attendance", error);
             setAttendanceList([]);
         }
-    };
+    }, []);
 
-    const handleLessonSelect = (lesson: Lesson) => {
+    const handleLessonSelect = useCallback((lesson: Lesson) => {
         setSelectedLesson(lesson);
         fetchAttendance(lesson.id);
-    };
+    }, [fetchAttendance]);
+
+    // Auto-select lesson from URL param (with fallback fetch if not in paginated list)
+    useEffect(() => {
+        if (lessons.length > 0 && lessonIdParam && !selectedLesson) {
+            const preselected = lessons.find(l => l.id === lessonIdParam);
+            if (preselected) {
+                handleLessonSelect(preselected);
+            } else {
+                // Lesson not in paginated list — fetch it individually
+                LessonService.getLessonById(lessonIdParam).then(lesson => {
+                    setLessons(prev => [lesson, ...prev]);
+                    handleLessonSelect(lesson);
+                }).catch(err => {
+                    console.error("Failed to fetch lesson by ID:", err);
+                });
+            }
+        }
+    }, [lessons, lessonIdParam, selectedLesson, handleLessonSelect]);
 
     const handleMarkAttendance = async (userId: string, status: 'present' | 'absent') => {
         if (!selectedLesson) return;

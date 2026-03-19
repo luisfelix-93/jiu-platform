@@ -16,13 +16,18 @@ export interface Lesson {
 }
 
 export const LessonService = {
-    async listLessons(filters?: { startDate?: string; endDate?: string, classId?: string }): Promise<Lesson[]> {
+    async listLessons(filters?: { startDate?: string; endDate?: string; classId?: string; limit?: number; orderDirection?: 'ASC' | 'DESC' }): Promise<Lesson[]> {
         const { data } = await api.get("/lessons", { params: filters });
         return data.data || data;
     },
 
     async getUpcomingLessons(): Promise<Lesson[]> {
         const { data } = await api.get("/lessons/upcoming");
+        return data;
+    },
+
+    async getLessonById(id: string): Promise<Lesson> {
+        const { data } = await api.get(`/lessons/${id}`);
         return data;
     },
 

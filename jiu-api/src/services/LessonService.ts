@@ -42,11 +42,14 @@ export class LessonService {
         const limit = filters.limit || 20;
         const skip = (page - 1) * limit;
 
+        // Sort direction
+        const orderDirection = filters.orderDirection || "ASC";
+
         // Fetch data with pagination
         const [data, total] = await lessonRepository.findAndCount({
             where,
             relations: ["class", "professor"],
-            order: { date: "ASC", startTime: "ASC" },
+            order: { date: orderDirection, startTime: orderDirection },
             skip,
             take: limit
         });
@@ -110,7 +113,7 @@ export class LessonService {
         return await lessonRepository.find({
             where: { date: MoreThanOrEqual(today) as any }, // TypeORM date string issue sometimes
             relations: ["class"],
-            take: 5,
+            take: 20,
             order: { date: "ASC", startTime: "ASC" }
         });
     }
