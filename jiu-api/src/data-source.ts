@@ -3,6 +3,8 @@ import { DataSource } from "typeorm";
 import * as dotenv from "dotenv";
 import { User } from "./entities/User";
 import { Academy } from "./entities/Academy";
+import { AcademyProfessor } from "./entities/AcademyProfessor";
+import { StudentAcademy } from "./entities/StudentAcademy";
 import { Attendance } from "./entities/Attendance";
 import { Class } from "./entities/Class";
 import { ClassEnrollment } from "./entities/ClassEnrollment";
@@ -51,6 +53,8 @@ export const AppDataSource = new DataSource({
     entities: [
         User,
         Academy,
+        AcademyProfessor,
+        StudentAcademy,
         Attendance,
         Class,
         ClassEnrollment,

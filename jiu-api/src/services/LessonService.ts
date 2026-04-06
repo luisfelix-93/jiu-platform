@@ -2,7 +2,7 @@ import { AppDataSource } from "../data-source";
 import { ScheduledLesson } from "../entities/ScheduledLesson";
 import { Class } from "../entities/Class";
 import { User } from "../entities/User";
-import { MoreThanOrEqual, LessThanOrEqual, Between } from "typeorm";
+import { MoreThanOrEqual, LessThanOrEqual, Between, In } from "typeorm";
 
 const lessonRepository = AppDataSource.getRepository(ScheduledLesson);
 const classRepository = AppDataSource.getRepository(Class);
@@ -25,46 +25,45 @@ export class LessonService {
         return await lessonRepository.save(lesson);
     }
 
-    static async listLessons(filters: any) {
-        const where: any = {};
-        if (filters.classId) where.classId = filters.classId;
-        if (filters.status) where.status = filters.status;
+    static async listLessons(filters: any, academyIds?: string[]) {
+        const qb = lessonRepository.createQueryBuilder("lesson")
+            .leftJoinAndSelect("lesson.class", "class")
+            .leftJoinAndSelect("lesson.professor", "professor");
 
-        // Date range filter
-        if (filters.startDate && filters.endDate) {
-            where.date = Between(filters.startDate, filters.endDate);
-        } else if (filters.startDate) {
-            where.date = MoreThanOrEqual(filters.startDate);
+        if (academyIds && academyIds.length > 0) {
+            qb.andWhere("class.academy_id IN (:...academyIds)", { academyIds });
         }
 
-        // Pagination parameters
+        if (filters.classId) {
+            qb.andWhere("lesson.class_id = :classId", { classId: filters.classId });
+        }
+        if (filters.status) {
+            qb.andWhere("lesson.status = :status", { status: filters.status });
+        }
+        if (filters.startDate && filters.endDate) {
+            qb.andWhere("lesson.date BETWEEN :startDate AND :endDate", {
+                startDate: filters.startDate,
+                endDate: filters.endDate,
+            });
+        } else if (filters.startDate) {
+            qb.andWhere("lesson.date >= :startDate", { startDate: filters.startDate });
+        }
+
         const page = filters.page || 1;
         const limit = filters.limit || 20;
-        const skip = (page - 1) * limit;
-
-        // Sort direction
         const orderDirection = filters.orderDirection || "ASC";
 
-        // Fetch data with pagination
-        const [data, total] = await lessonRepository.findAndCount({
-            where,
-            relations: ["class", "professor"],
-            order: { date: orderDirection, startTime: orderDirection },
-            skip,
-            take: limit
-        });
+        qb.orderBy("lesson.date", orderDirection)
+            .addOrderBy("lesson.startTime", orderDirection)
+            .skip((page - 1) * limit)
+            .take(limit);
 
-        // Calculate total pages
+        const [data, total] = await qb.getManyAndCount();
         const totalPages = Math.ceil(total / limit);
 
         return {
             data,
-            pagination: {
-                page,
-                limit,
-                total,
-                totalPages
-            }
+            pagination: { page, limit, total, totalPages },
         };
     }
 
@@ -108,13 +107,21 @@ export class LessonService {
         return await lessonRepository.remove(lesson);
     }
 
-    static async getUpcomingLessons() {
+    static async getUpcomingLessons(academyIds?: string[]) {
         const today = new Date().toISOString().split('T')[0];
-        return await lessonRepository.find({
-            where: { date: MoreThanOrEqual(today) as any }, // TypeORM date string issue sometimes
-            relations: ["class"],
-            take: 20,
-            order: { date: "ASC", startTime: "ASC" }
-        });
+
+        const qb = lessonRepository.createQueryBuilder("lesson")
+            .leftJoinAndSelect("lesson.class", "class")
+            .where("lesson.date >= :today", { today });
+
+        if (academyIds && academyIds.length > 0) {
+            qb.andWhere("class.academy_id IN (:...academyIds)", { academyIds });
+        }
+
+        qb.orderBy("lesson.date", "ASC")
+            .addOrderBy("lesson.startTime", "ASC")
+            .take(20);
+
+        return await qb.getMany();
     }
 }

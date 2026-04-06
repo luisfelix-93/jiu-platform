@@ -72,7 +72,8 @@ export class LessonController {
                 return res.status(400).json({ error: validation.error.format() });
             }
 
-            const result = await LessonService.listLessons(validation.data);
+            const academyIds = req.user?.academyIds;
+            const result = await LessonService.listLessons(validation.data, academyIds);
             res.json(result);
         } catch (error: any) {
             res.status(400).json({ error: error.message });
@@ -118,7 +119,8 @@ export class LessonController {
 
     static async getUpcoming(req: Request, res: Response) {
         try {
-            const result = await LessonService.getUpcomingLessons();
+            const academyIds = req.user?.academyIds;
+            const result = await LessonService.getUpcomingLessons(academyIds);
             res.json(result);
         } catch (error: any) {
             res.status(400).json({ error: error.message });

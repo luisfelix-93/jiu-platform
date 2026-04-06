@@ -1,11 +1,13 @@
 import { Router } from "express";
 import { ClassController } from "../controllers/ClassController";
 import { authMiddleware, checkRole } from "../middlewares/auth.middleware";
+import { academyScopeMiddleware } from "../middlewares/academy-scope.middleware";
 import { UserRole } from "../entities/User";
 
 const router = Router();
 
 router.use(authMiddleware);
+router.use(academyScopeMiddleware);
 
 router.get("/", ClassController.list);
 router.get("/:id", ClassController.getOne);

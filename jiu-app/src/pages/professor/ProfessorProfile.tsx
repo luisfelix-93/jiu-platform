@@ -6,9 +6,14 @@ import { useAuthStore } from '../../stores/useAuthStore';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
-import { User, Phone } from 'lucide-react';
+import { User, Phone, Building2, Pencil, Plus } from 'lucide-react';
 import { AuthService } from '../../services/auth.service';
 import { translateBelt } from '../../utils/belt';
+import { useAcademyStore } from '../../stores/useAcademyStore';
+import { Modal } from '../../components/ui/Modal';
+import { AcademyForm } from '../../components/academy/AcademyForm';
+import { AcademyProfessorsModal } from '../../components/academy/AcademyProfessorsModal';
+import type { Academy } from '../../types/academy';
 
 const profileSchema = z.object({
     name: z.string().min(2, 'Nome deve ter no mínimo 2 caracteres'),
@@ -22,8 +27,14 @@ type ProfileSchema = z.infer<typeof profileSchema>;
 
 export const ProfessorProfile = () => {
     const { user, updateUser } = useAuthStore();
+    const { myAcademies, fetchMyAcademies } = useAcademyStore();
     const [successMessage, setSuccessMessage] = useState('');
     const [error, setError] = useState('');
+
+    const [isAcademyModalOpen, setIsAcademyModalOpen] = useState(false);
+    const [editingAcademy, setEditingAcademy] = useState<Academy | undefined>(undefined);
+    const [isProfessorsModalOpen, setIsProfessorsModalOpen] = useState(false);
+    const [managingAcademy, setManagingAcademy] = useState<Academy | null>(null);
 
     // Pre-fill form with user data + profile data if available
     // Note: user object from stats/me might need to be refreshed or we use what's in store
@@ -179,6 +190,105 @@ export const ProfessorProfile = () => {
                     </form>
                 </CardContent>
             </Card>
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                    <CardTitle className="flex items-center gap-2">
+                        <Building2 className="h-5 w-5" />
+                        Minhas Academias
+                    </CardTitle>
+                    <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => {
+                            setEditingAcademy(undefined);
+                            setIsAcademyModalOpen(true);
+                        }}
+                    >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Nova Academia
+                    </Button>
+                </CardHeader>
+                <CardContent>
+                    {myAcademies.length === 0 ? (
+                        <p className="text-neutral-500 text-sm py-4">
+                            Você ainda não está vinculado a nenhuma academia.
+                        </p>
+                    ) : (
+                        <div className="space-y-4">
+                            {myAcademies.map((academy) => (
+                                <div key={academy.id} className="flex items-center justify-between p-4 border rounded-lg hover:border-primary/50 transition-colors">
+                                    <div className="flex items-center gap-4">
+                                        {academy.logoUrl ? (
+                                            <img src={academy.logoUrl} alt={academy.name} className="h-12 w-12 rounded-md object-cover bg-neutral-100" />
+                                        ) : (
+                                            <div className="h-12 w-12 flex items-center justify-center rounded-md bg-neutral-100 text-neutral-400">
+                                                <Building2 className="h-6 w-6" />
+                                            </div>
+                                        )}
+                                        <div>
+                                            <h4 className="font-semibold text-neutral-900">{academy.name}</h4>
+                                            <div className="flex items-center gap-2 mt-1">
+                                                <span className={`text-xs px-2 py-0.5 rounded-full ${academy.role === 'owner' ? 'bg-primary/10 text-primary' : 'bg-neutral-200 text-neutral-700'}`}>
+                                                    {academy.role === 'owner' ? 'Dono/Administrador' : 'Professor Membro'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {academy.role === 'owner' && (
+                                        <div className="flex items-center gap-2">
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => {
+                                                    setManagingAcademy(academy);
+                                                    setIsProfessorsModalOpen(true);
+                                                }}
+                                            >
+                                                <User className="h-4 w-4 mr-2" />
+                                                Professores
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => {
+                                                    setEditingAcademy(academy);
+                                                    setIsAcademyModalOpen(true);
+                                                }}
+                                            >
+                                                <Pencil className="h-4 w-4 mr-2" />
+                                                Editar
+                                            </Button>
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+
+            <Modal 
+                isOpen={isAcademyModalOpen} 
+                onClose={() => setIsAcademyModalOpen(false)}
+                title={editingAcademy ? "Editar Academia" : "Nova Academia"}
+                maxWidth="max-w-2xl"
+            >
+                <div className="py-4">
+                    <AcademyForm 
+                        academy={editingAcademy} 
+                        onSuccess={() => {
+                            setIsAcademyModalOpen(false);
+                            fetchMyAcademies();
+                        }} 
+                    />
+                </div>
+            </Modal>
+
+            <AcademyProfessorsModal 
+                isOpen={isProfessorsModalOpen} 
+                onClose={() => setIsProfessorsModalOpen(false)} 
+                academy={managingAcademy} 
+            />
         </div>
     );
 };

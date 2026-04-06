@@ -146,6 +146,9 @@ export const Register = () => {
                                 Professor
                             </button>
                         </div>
+                        <p className="text-xs text-neutral-500 mt-1">
+                            Você poderá selecionar ou criar sua academia após concluir o cadastro.
+                        </p>
                     </div>
 
                     <div className="space-y-1">

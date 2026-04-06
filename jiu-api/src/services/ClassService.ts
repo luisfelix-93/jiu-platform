@@ -2,6 +2,7 @@ import { AppDataSource } from "../data-source";
 import { Class } from "../entities/Class";
 import { ClassEnrollment } from "../entities/ClassEnrollment";
 import { User } from "../entities/User";
+import { In } from "typeorm";
 
 const classRepository = AppDataSource.getRepository(Class);
 const enrollmentRepository = AppDataSource.getRepository(ClassEnrollment);
@@ -13,8 +14,14 @@ export class ClassService {
         return await classRepository.save(newClass);
     }
 
-    static async listClasses() {
+    static async listClasses(academyIds?: string[]) {
+        const where: any = {};
+        if (academyIds && academyIds.length > 0) {
+            where.academyId = In(academyIds);
+        }
+
         return await classRepository.find({
+            where,
             relations: ["academy"]
         });
     }

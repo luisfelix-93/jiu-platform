@@ -1,5 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from "typeorm";
 import { Attendance } from "./Attendance";
+import { AcademyProfessor } from "./AcademyProfessor";
+import { StudentAcademy } from "./StudentAcademy";
 
 export enum UserRole {
     ALUNO = "aluno",
@@ -59,4 +61,11 @@ export class User {
 
     @OneToMany(() => Attendance, (attendance) => attendance.user)
     attendances: Attendance[];
+
+    @OneToMany(() => AcademyProfessor, (ap) => ap.professor)
+    academyProfessors: AcademyProfessor[];
+
+    @OneToMany(() => StudentAcademy, (sa) => sa.student)
+    studentAcademies: StudentAcademy[];
 }
+

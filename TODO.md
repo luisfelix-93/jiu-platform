@@ -266,8 +266,159 @@ Derived from `docs/notify-pass.specs.md`.
 
 ## Fase 3: Testes e Validação
 
-- [ ] **Testes de Validação**
-    - Validar schemas Zod atualizados.
-    - Testar fluxo completo de login e registro garantindo que os toasts aparecem corretamente.
 
+# Multi-Academia (To Do)
 
+Derived from `docs/PLAN-multi-academia.md`.
+
+## Fase 1: Backend — Modelo e Migração
+
+### Entidades
+
+- [x] **TASK-1.1: Criar entidades `AcademyProfessor` e `StudentAcademy`**
+    - Criar `entities/AcademyProfessor.ts` com PK composta `(academy_id, professor_id)` e role `owner | member`.
+    - Criar `entities/StudentAcademy.ts` com PK composta `(academy_id, student_id)`, campos `enrolled_at` e `is_active`.
+    - Verificar: `npx tsc --noEmit` sem erros.
+
+- [x] **TASK-1.2: Atualizar entidade `Academy`**
+    - Adicionar campo `logo_url` (nullable, aceita URL externa).
+    - Adicionar relações `OneToMany` para `AcademyProfessor` e `StudentAcademy`.
+    - Verificar: compilação TypeScript sem erro.
+
+- [x] **TASK-1.3: Atualizar entidade `User` (relações)**
+    - Adicionar relação `OneToMany → AcademyProfessor` (para professores).
+    - Adicionar relação `OneToMany → StudentAcademy` (para alunos).
+    - **Sem FK direta** — academias acessadas via tabelas de vínculo.
+    - Verificar: compilação TypeScript sem erro.
+
+### Migration e Seed
+
+- [x] **TASK-1.4: Criar migration `multi-academia`**
+    - `ALTER TABLE academies ADD COLUMN logo_url` (nullable).
+    - `CREATE TABLE academy_professors` (PK composta + role `owner | member`).
+    - `CREATE TABLE student_academies` (PK composta + `is_active` + `enrolled_at`).
+    - INSERT academia "default" (nome, endereço e telefone provisórios).
+    - INSERT em `academy_professors` para vincular admin/professor padrão como owner.
+    - INSERT em `student_academies` para todos os alunos existentes → academia default.
+    - Verificar: `npm run migration:run` sem erro; `migration:revert` desfaz tudo sem conflito.
+
+- [x] **TASK-2.1: Script seed academia default**
+    - Criar `scripts/seed-default-academy.ts` idempotente (pode rodar N vezes sem duplicatas).
+    - Garantir que nenhum aluno existente fique sem entrada em `student_academies`.
+    - Verificar: rodar 2× consecutivas sem inserir duplicatas; todos os alunos vinculados.
+
+### Serviço e Controller
+
+- [x] **TASK-1.5: Criar `AcademyService`**
+    - `createAcademy(professorId, dto)` — cria academia + vínculo owner automático.
+    - `getAcademiesByProfessor(professorId)` — lista academias do professor.
+    - `getAcademiesByStudent(studentId)` — lista academias do aluno.
+    - `searchAcademies(query)` — busca por nome para associação.
+    - `addProfessorToAcademy(academyId, requesterId, targetProfessorId)` — apenas owner.
+    - `enrollStudent(academyId, studentId)` — matricula aluno.
+    - `unenrollStudent(academyId, studentId)` — soft-disable (`is_active = false`).
+    - `updateAcademy(academyId, professorId, dto)` — edita (apenas owner, retorna 403 para membro).
+    - Verificar: unit tests cobrindo owner vs membro e aluno em múltiplas academias.
+
+- [x] **TASK-1.6: Criar `AcademyController` e rotas**
+    - `POST /academies` — cria academia (professor).
+    - `GET /academies/me` — lista academias do usuário logado (professor ou aluno).
+    - `PUT /academies/:id` — edita academia (owner).
+    - `GET /academies/:id` — detalhe da academia (professor, aluno).
+    - `GET /academies` — listagem/busca para associação (autenticado).
+    - `POST /academies/:id/professors` — adiciona professor membro (owner).
+    - `DELETE /academies/:id/professors/:userId` — remove professor (owner).
+    - `POST /academies/:id/students` — aluno se matricula.
+    - `DELETE /academies/:id/students/me` — aluno sai da academia (soft-delete).
+    - Registrar rotas em `routes/academy.routes.ts` e conectar em `app.ts`.
+    - Verificar: todos os endpoints retornam 200/201/403 corretos.
+
+### Middleware e Filtros
+
+- [x] **TASK-1.7: Middleware de scope de academia**
+    - Criar `middlewares/academy-scope.middleware.ts`.
+    - Injeta `req.academyIds: string[]` com os IDs de academias do usuário logado (funciona para professor e aluno via tabelas de vínculo).
+    - Verificar: `GET /classes` com middleware ativo retorna apenas turmas das academias do usuário.
+
+- [x] **TASK-1.8: Aplicar filtros de isolamento nos controllers existentes**
+    - `ClassController` — filtrar por `WHERE class.academy_id IN (:...academyIds)`.
+    - `LessonController` — filtrar via join `Class → academy_id`.
+    - `AttendanceController` — filtrar via join `ScheduledLesson → Class → academy_id`.
+    - Verificar: aluno matriculado nas academias A e B vê turmas de ambas; não vê turmas da academia C.
+
+---
+
+## Fase 2: Frontend
+
+### Foundation
+
+- [x] **TASK-3.1: Tipos e serviço de academia**
+    - Criar `types/academy.ts` com interfaces `Academy`, `AcademyMember`, `StudentAcademy`.
+    - Criar `services/academyService.ts` com chamadas axios para todos os endpoints de academia.
+    - Verificar: TypeScript compila sem `any`.
+
+- [x] **TASK-3.2: Zustand store de academia**
+    - Criar `stores/academyStore.ts` seguindo padrão dos outros stores.
+    - Campos: `myAcademies: Academy[]`, `activeAcademy: Academy | null`.
+    - Ações: `fetchMyAcademies`, `setActiveAcademy`, `enrollInAcademy`, `leaveAcademy`.
+    - Persistir `activeAcademy` no `sessionStorage`.
+    - Verificar: troca de academia ativa dispara re-render das listas de turmas/aulas.
+
+### Componentes
+
+- [x] **TASK-3.3: Componente `AcademyForm`**
+    - Criar `components/AcademyForm.tsx` reutilizável para criar e editar academia.
+    - Campos: nome (obrigatório), endereço (obrigatório), telefone (obrigatório), logo_url (URL externa, opcional).
+    - Validação com zod + react-hook-form.
+    - Verificar: submit chama `academyService` e exibe toast de sucesso/erro.
+
+- [x] **TASK-3.4: Componente `AcademySelect`**
+    - Criar `components/AcademySelect.tsx` — dropdown com busca de academias.
+    - Busca com debounce chamando `GET /academies?q=...`.
+    - Verificar: busca funciona com 10+ academias.
+
+- [x] **TASK-3.5: Componente `AcademyOnboarding`**
+    - Criar `components/AcademyOnboarding.tsx` — banner/modal para professor sem academia.
+    - Card **"Criar nova academia"** → abre `AcademyForm`.
+    - Card **"Associar-se a uma academia existente"** → abre `AcademySelect`.
+    - Exibir no `ProfessorLayout` quando `myAcademies.length === 0` (não bloqueia acesso ao perfil).
+    - Verificar: professor recém-cadastrado vê onboarding; após criar/associar, aviso desaparece.
+
+### Páginas e Layouts
+
+- [x] **TASK-3.6: Perfil do Professor — Seção "Minhas Academias"**
+    - Atualizar `pages/professor/ProfessorProfile.tsx`.
+    - Listar academias com badge `owner` / `membro`.
+    - Owner vê botão de editar → `AcademyForm`.
+    - Owner vê lista de professores e pode adicionar/remover membros.
+    - Verificar: owner edita; membro vê em read-only.
+
+- [x] **TASK-3.7: Perfil do Aluno — Gestão de Academias**
+    - Atualizar `pages/student/StudentProfile.tsx`.
+    - Seção "Minhas Academias" com lista de academias vinculadas e opção de sair.
+    - Botão "+ Associar-me a uma academia" → `AcademySelect` → `POST /academies/:id/students`.
+    - Seletor de academia ativa quando vinculado a 2+ academias.
+    - Verificar: aluno pode estar em 2 academias e alternar entre elas.
+
+- [x] **TASK-3.8: Registro — Step de Academia**
+    - Atualizar `pages/Register.tsx` com step opcional de seleção de academia.
+    - Aluno pode pular; academia pode ser configurada no perfil depois.
+    - Se selecionada: chamar `POST /academies/:id/students` após registro.
+    - Verificar: registro com academia inclui matrícula; sem academia cria conta normalmente.
+
+- [x] **TASK-3.9: Seletor de Academia Ativa no Nav**
+    - Componente no header/nav visível **apenas** para usuários com 2+ academias.
+    - Trocar academia ativa via `academyStore.setActiveAcademy` → turmas/aulas atualizam sem reload.
+    - Verificar: aluno com 2 academias troca academia ativa → conteúdo atualiza sem reload de página.
+
+---
+
+## Critérios de Aceitação
+
+- [x] Migration roda sem erro; `migration:revert` desfaz completamente.
+- [x] Seed idempotente — nenhum aluno existente fica sem academia.
+- [x] Aluno em 2 academias vê turmas de ambas ao alternar academia ativa.
+- [x] Aluno não vê turmas de academia em que não está matriculado.
+- [x] Professor sem academia vê tela de onboarding no dashboard.
+- [x] Professor membro não consegue editar academia (403).
+- [x] `npx tsc --noEmit` e `npm run lint` passam sem erros.
