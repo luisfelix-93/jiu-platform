@@ -1,52 +1,194 @@
-# Pull Request Summary: Correção do Bug de Visibilidade e Limite de Aulas (Paginação e Ordenação)
+# Pull Request Summary: Feature Multi-Acadademia
 
-## Descrição do Problema (Issue)
+## Descrição do Pull Request
 
-Foi relatado um bug onde o professor criava uma aula e os alunos conseguiam registrar presença pelo dashboard (`StudentHome`), mas quando o professor acessava a tela de chamada (`ProfessorAttendance`), a lista de alunos não carregava (a tela pedia para selecionar uma aula). Curiosamente, o comportamento "voltava a funcionar" se o professor apagasse aulas mais antigas da plataforma.
-
-Além disso, os alunos começaram a notar que a plataforma estava limitando a quantidade de aulas visíveis em seus dashboards para marcação de presença.
-
-### Causa Raiz Técnica (Root Cause)
-
-1. **Bug do Aluno (Falta de Aulas Visíveis):** Os serviços backend (`DashboardService` e `LessonService`) possuíam limitação de paginação (`take`) rigidamente codificada (*hardcoded*) com valor `5`. Isso limitava a resposta da API, ocultando aulas que ocorreriam no fim do dia em academias com múltiplas turmas diárias.
-2. **Bug do Professor (Falha na seleção de aulas):** O componente `ProfessorAttendance.tsx` utiliza o atalho do `LessonService.listLessons()` para popular o menu lateral com aulas recentes e, com base no parâmetro de URL (`lessonIdParam`), fazer o `auto-select` da aula correspondente para carregar a lista de chamadas. Contudo:
-   - O `LessonService` no backend ordenava os registros por padrão como `ASC` (da aula mais antiga do sistema para a mais nova) e com limite de `20`.
-   - Consequentemente, a API respondia com as 20 aulas *mais velhas da academia*. A aula de "hoje" (recém-criada) não vinha nesse payload inicial.
-   - O array method `find(l => l.id === lessonIdParam)` do React falhava silenciosamente, impedindo o disparo da query de presenças para aquele `lessonId`. O ato de "apagar uma aula velha" movia a fila e eventualmente fazia a aula recente entrar na primeira página de 20 registros.
+Este PR implementa a funcionalidade de **Multi-Acadademia**, permitindo que professores cadastrem suas academias e alunos sejam matriculados em uma academia específica. Esta é a primeira funcionalidade do roadmap de melhorias da plataforma.
 
 ---
 
-## Solução Implementada e Alterações Técnicas
+## Visão Geral das Alterações
 
-A solução exigiu uma adaptação do pipeline de chamadas da API (`Backend`) para suportar ordenações decrescentes e limites expandidos, acoplado com uma refatoração nas buscas do `Frontend` para tirar proveito dessas propriedades, com a adição de um mecanismo de *fallback* resiliente.
-
-### 1. Modificações no Backend (`jiu-api`)
-
-- **`src/services/DashboardService.ts`**:
-  - Ajuste nas linhas que puxam `upcomingLessons` (Student/Professor) e `recentAttendance` para utilizar `take: 20` (anteriormente `5` e `10`), mitigando a ausência de eventos diários.
-- **`src/services/LessonService.ts`**:
-  - Em `getUpcomingLessons()`, o `take` subiu de `5` para `20`.
-  - Em `listLessons(filters)`, a query do TypeORM `order: { date: "ASC", startTime: "ASC" }` foi alterada para aceitar dinamicamente a propriedade `orderDirection`.
-- **`src/controllers/LessonController.ts`**:
-  - Expandido o schema Zod para aceitar `orderDirection` do tipo `enum(["ASC", "DESC"])` padrão `"ASC"`. O limite de `max()` para o `limit` de paginação na query string subiu de `100` para `200`.
-
-### 2. Modificações no Frontend (`jiu-app`)
-
-- **`src/services/lesson.service.ts`**:
-  - `listLessons` atualizado para repassar a tipagem `{ limit?: number; orderDirection?: 'ASC' | 'DESC' }` via query parameters do Axios.
-  - Implementado o método `getLessonById(id: string)` utilizando o endpoint `GET /lessons/:id`.
-- **`src/pages/professor/ProfessorAttendance.tsx`**:
-  - **Query de Lista**: Alterada de `LessonService.listLessons()` para `LessonService.listLessons({ limit: 50, orderDirection: 'DESC' })`. Agora a tela sempre lista as 50 aulas mais recentes.
-  - **Mecanismo de Fallback (Resiliência)**: No hook de auto-select da URL (`useEffect`), caso a aula provida por `lessonIdParam` ainda não venha nas 50 páginas solicitadas, o sistema invoca assincronamente o método `LessonService.getLessonById(...)` e realiza o *unshift* individual do objeto desta aula no estado `lessons`, executando a chamada. Esse comportamento isola e mitiga o bug por completo para turmas de qualquer tamanho/distância no futuro.
-  - **Correção de Build de Produção (Regras de Escopo de Bloco)**: O build de produção falhava com erro TS2448/TS2454 (`Block-scoped variable used before its declaration`). O erro ocorria porque a função `handleLessonSelect` (escrita usando `useCallback` e a keyword `const`) não sofria *hoisting* pelo motor JavaScript no formato estrito do TypeScript, mas estava sendo listada no array de dependências e chamada pelo hook `useEffect` (na linha 40), antes de ser declarada na linha 67. Realizamos a reordenação hierárquica do código, puxando as declarações assíncronas de `fetchAttendance` e `handleLessonSelect` para **cima** das invocações do `useEffect` de auto-select, consertando assim o pipeline de build estático e passando ileso pela *pipeline* do Vercel/Vite.
-- **`src/pages/student/StudentCalendar.tsx`**:
-  - Aplicado `limit: 100` na *fetch* de listagem global para as views mensais, evitando que as últimas semanas do mês calendárico sumissem por conta da limitação de 20.
+O PR adiciona suporte completo para múltiplas academias na plataforma, incluindo:
+- Cadastro e gestão de academias por professores
+- Matrícula de alunos em academias
+- Middleware de escopo para filtragem de dados por academia
+- Fluxo de onboarding para acadêmias
+- Migração de dados para alunos existentes
 
 ---
 
-## Impacto Pós-Deploy e Homologação
-- Professores podem gerenciar presenças independentemente de a aula ter sido agendada há muito tempo ou não.
-- A visualização do aluno para Check-Ins passa a comportar até 20 aulas do seu ecossistema por vez, resolvendo a restrição artificial.
-- O componente calendário passa a comportar dezenas de aulas em sua view.
+## Alterações no Backend (`jiu-api`)
 
-**Status:** Pronto para revisão e PR merge.
+### 1. Novas Entidades
+
+**`src/entities/Academy.ts`** - Entidade principal da academia
+- Campos: id, name, address, phone, logoUrl, createdAt, updatedAt
+
+**`src/entities/AcademyProfessor.ts`** - Relacionamento professor-academia
+- Permite múltiplos professores por academia (many-to-many)
+
+**`src/entities/StudentAcademy.ts`** - Relacionamento aluno-academia
+- Permite que um aluno esteja matriculado em uma academia
+
+**`src/entities/User.ts`** (atualização)
+- Adicionado campo `academyId` para vincular usuário a uma academia
+
+### 2. Serviços e Controllers
+
+**`src/services/AcademyService.ts`** (187 linhas)
+- `createAcademy()` - Criar nova academia
+- `getAcademyByProfessor()` - Obter academia do professor logado
+- `updateAcademy()` - Atualizar dados da academia
+- `getAcademyById()` - Buscar academia por ID
+- `listAcademies()` - Listar todas as academias (admin)
+- `addProfessorToAcademy()` - Adicionar professor à academia
+- `enrollStudentInAcademy()` - Matricular aluno
+- `getStudentsByAcademy()` - Listar alunos de uma academia
+
+**`src/controllers/AcademyController.ts`** (118 linhas)
+- Endpoints REST para todas as operações do service
+
+### 3. Rotas e Validação
+
+**`src/routes/academy.routes.ts`**
+- `POST /academies` - Criar academia
+- `GET /academies/me` - Minha academia
+- `PUT /academies/me` - Editar academia
+- `GET /academies/:id` - Buscar por ID
+- `POST /academies/:id/professors` - Adicionar professor
+- `POST /academies/:id/alunos` - Matricular aluno
+- `GET /academies/:id/alunos` - Listar alunos
+
+**`src/schemas/academy.schema.ts`**
+- Schema de validação Zod para criação e atualização de academias
+
+### 4. Middleware
+
+**`src/middlewares/academy-scope.middleware.ts`** (17 linhas)
+- Filtra dados baseado na academia do usuário logado
+- Aplica automaticamente em queries de turmas e aulas
+
+### 5. Migração de Banco
+
+**`src/migrations/1770000000000-MultiAcademia.ts`** (117 linhas)
+- Criação das tabelas `academies`, `academy_professors`, `student_academies`
+- Adição da coluna `academy_id` na tabela `users`
+- Migração de dados existentes (criação de academia default)
+
+### 6. Integração com Serviços Existentes
+
+**`src/services/ClassService.ts`**
+- Adicionado filtro por `academyId` nas consultas de turmas
+
+**`src/services/LessonService.ts`**
+- Adicionado filtro por `academyId` nas consultas de aulas
+- Atualizado `getUpcomingLessons()` para filtrar por academia
+
+---
+
+## Alterações no Frontend (`jiu-app`)
+
+### 1. Componentes de Academia
+
+**`src/components/academy/AcademyForm.tsx`** (89 linhas)
+- Formulário de criação/edição de academia
+- Campos: nome, endereço, telefone
+- Validação com Zod
+
+**`src/components/academy/AcademyOnboarding.tsx`** (103 linhas)
+- Fluxo de onboarding para professores sem academia
+- Wizard de 3 passos: dados básicos → informações → confirmação
+
+**`src/components/academy/AcademyProfessorsModal.tsx`** (177 linhas)
+- Modal para gerenciar professores de uma academia
+- Lista de professores com opção de adicionar/remover
+
+**`src/components/academy/AcademySelect.tsx`** (97 linhas)
+- Dropdown de seleção de academia
+- Utilizado no registro e perfil do aluno
+
+### 2. Serviços e Estado
+
+**`src/services/academy.service.ts`** (54 linhas)
+- `createAcademy()` - Criar academia
+- `getMyAcademy()` - Obter minha academia
+- `updateAcademy()` - Atualizar academia
+- `listAcademies()` - Listar academias
+- `getAcademy()` - Buscar por ID
+
+**`src/stores/useAcademyStore.ts`** (93 linhas)
+- Estado global Zustand para dados da academia
+- Gerencia academia atual do professor
+
+**`src/types/academy.ts`** (37 linhas)
+- Tipos TypeScript para Academy, AcademyProfessor, etc.
+
+### 3. Páginas Atualizadas
+
+**`src/pages/professor/ProfessorProfile.tsx`** (+112 linhas)
+- Nova seção "Minha Academia" no perfil do professor
+- Botão para criar/editar academia
+- Exibição de dados da academia cadastrada
+
+**`src/pages/student/StudentProfile.tsx`** (+103 linhas)
+- Campo de seleção de academia no perfil do aluno
+- Edição da academia matriculada
+
+**`src/pages/Register.tsx`**
+- Adicionado fluxo de seleção de academia no registro
+
+**`src/pages/professor/ProfessorLayout.tsx`** (28 linhas)
+- Integração com AcademyStore para carregar dados da academia
+
+**`src/pages/layout/DashboardLayout.tsx`** (38 linhas)
+- Exibição do nome da academia no header
+
+---
+
+## Decisões Técnicas
+
+1. **Estratégia de Migração**: Criação de academia "default" para vincular alunos existentes
+2. **Relacionamento**: Um professor pode ter múltiplas academias, um aluno uma academia
+3. **Filtros**: Middleware aplica automaticamente escopo de academia em turmas/aulas
+4. **UX**: Onboarding obrigatório para professores sem academia cadastrada
+
+---
+
+## Impacto e Funcionalidades
+
+### Para Professores
+- ✅ Cadastro de academia com nome, endereço e telefone
+- ✅ Edição dos dados da academia a qualquer momento
+- ✅ Dashboard filtrado pela academia do professor
+
+### Para Alunos
+- ✅ Seleção de academia no momento do cadastro
+- ✅ Edição da academia no perfil
+- ✅ Visualização apenas de dados da sua academia
+
+### Para Admin
+- ✅ Visualização de todas as academias
+- ✅ Gestão centralizada
+
+---
+
+## Testes Realizados
+
+- Criação de academia pelo professor
+- Edição de dados da academia
+- Registro de novo aluno com seleção de academia
+- Edição de academia pelo aluno
+- Verificação de filtragem por academia em turmas/aulas
+
+---
+
+## Status
+
+✅ **Pronto para produção**
+
+**Nota**: Este PR faz parte do roadmap documentado em `doc/multi-academy.specs.md` e `doc/roadmap.md`.
+
+---
+
+*PR criado em: 06/04/2026*  
+*Commit: f7e33ba - 20260406 - multi-academy feature*
