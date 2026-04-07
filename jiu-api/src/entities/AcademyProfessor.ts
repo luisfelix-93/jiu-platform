@@ -23,7 +23,7 @@ export class AcademyProfessor {
     @JoinColumn({ name: "professor_id" })
     professor: User;
 
-    @Column({ type: "enum", enum: AcademyRole, default: AcademyRole.MEMBER })
+    @Column({ type: "varchar", default: AcademyRole.MEMBER })
     @Index()
     role: AcademyRole;
 
