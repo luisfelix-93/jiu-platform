@@ -15,13 +15,20 @@ export class ClassService {
     }
 
     static async listClasses(academyIds?: string[]) {
-        const where: any = {};
-        if (academyIds && academyIds.length > 0) {
-            where.academyId = In(academyIds);
+        if (academyIds !== undefined) {
+            if (academyIds.length === 0) {
+                return [];
+            }
+
+            return await classRepository.find({
+                where: {
+                    academyId: In(academyIds)
+                },
+                relations: ["academy"]
+            });
         }
 
         return await classRepository.find({
-            where,
             relations: ["academy"]
         });
     }
