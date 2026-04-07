@@ -7,11 +7,13 @@ export const academyScopeMiddleware = async (req: Request, res: Response, next: 
             return next();
         }
 
+        req.user.academyIds = [];
+
         const academyIds = await AcademyService.getAcademyIdsByUser(req.user.userId);
-        req.user.academyIds = academyIds;
-        next();
+        req.user.academyIds = Array.isArray(academyIds) ? academyIds : [];
+        return next();
     } catch (error) {
         console.error("Academy scope middleware error:", error);
-        next();
+        return res.status(500).json({ message: "Failed to resolve academy scope" });
     }
 };
