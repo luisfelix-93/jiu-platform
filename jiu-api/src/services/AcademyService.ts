@@ -51,10 +51,26 @@ export class AcademyService {
     }
 
     static async getAcademyById(id: string) {
-        const academy = await academyRepository.findOne({
-            where: { id },
-            relations: ["professors", "professors.professor"],
-        });
+        const academy = await academyRepository
+            .createQueryBuilder("academy")
+            .leftJoinAndSelect("academy.professors", "academyProfessor")
+            .leftJoinAndSelect("academyProfessor.professor", "professor")
+            .select([
+                "academy.id",
+                "academy.name",
+                "academy.address",
+                "academy.phone",
+                "academy.logoUrl",
+                "academyProfessor.academyId",
+                "academyProfessor.professorId",
+                "academyProfessor.role",
+                "professor.id",
+                "professor.name",
+                "professor.email",
+                "professor.avatar",
+            ])
+            .where("academy.id = :id", { id })
+            .getOne();
         if (!academy) throw new Error("Academia não encontrada");
 
         const studentCount = await studentAcademyRepository.count({
