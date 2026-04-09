@@ -4,7 +4,24 @@ import { ClassService } from "../services/ClassService";
 export class ClassController {
     static async create(req: Request, res: Response) {
         try {
-            const result = await ClassService.createClass(req.body);
+            const academyIds = req.user?.academyIds || [];
+
+            // Determine academyId: prefer body value, fallback to user's first academy
+            let academyId = req.body.academyId;
+            if (academyId) {
+                // Validate that the provided academyId belongs to the user
+                if (!academyIds.includes(academyId)) {
+                    return res.status(403).json({ error: "Você não pertence a esta academia" });
+                }
+            } else if (academyIds.length > 0) {
+                academyId = academyIds[0];
+            }
+
+            if (!academyId) {
+                return res.status(400).json({ error: "Nenhuma academia encontrada. Crie ou associe-se a uma academia primeiro." });
+            }
+
+            const result = await ClassService.createClass({ ...req.body, academyId });
             res.status(201).json(result);
         } catch (error: any) {
             res.status(400).json({ error: error.message });

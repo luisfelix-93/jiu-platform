@@ -45,7 +45,7 @@ export const AppDataSource = new DataSource({
         max: 20,
         min: 2,
         idleTimeoutMillis: 30000,
-        connectionTimeoutMillis: 2000,
+        connectionTimeoutMillis: 10000,
         acquireTimeoutMillis: 60000,
         ssl: sslConfig,
         family: 4,
