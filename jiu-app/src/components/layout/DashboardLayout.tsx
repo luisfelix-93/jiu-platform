@@ -1,8 +1,9 @@
 import { type ReactNode, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/useAuthStore';
+import { useAcademyStore } from '../../stores/useAcademyStore';
 import { cn } from '../../lib/utils';
-import { Menu, X, LogOut, LayoutDashboard } from 'lucide-react';
+import { Menu, X, LogOut, LayoutDashboard, Building2, ChevronDown } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { translateBelt } from '../../utils/belt';
 
@@ -22,6 +23,7 @@ interface DashboardLayoutProps {
 export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutProps) => {
     const [isSidebarOpen, setSidebarOpen] = useState(false);
     const { user, logout } = useAuthStore();
+    const { myAcademies, activeAcademy, setActiveAcademy } = useAcademyStore();
     const navigate = useNavigate();
 
     const handleLogout = () => {
@@ -58,19 +60,47 @@ export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutPr
                         </h1>
                     </div>
 
-                    {/* User Info */}
+                    {/* User Info & Academy Selector */}
                     <div className="p-4 border-b bg-neutral-50 mt-16 lg:mt-0">
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 mb-3">
                             <div className="h-10 w-10 rounded-full bg-neutral-200 overflow-hidden shrink-0">
                                 <img src={user?.avatarUrl || `https://ui-avatars.com/api/?name=${user?.name}`} alt="Profile" className="h-full w-full object-cover" />
                             </div>
                             <div className="overflow-hidden">
                                 <p className="font-semibold text-sm truncate">{user?.name}</p>
                                 <span className="text-xs px-2 py-0.5 rounded-full bg-neutral-200 text-neutral-600 uppercase font-bold">
-                                    Faixa {translateBelt(user?.beltColor)}
+                                    Faixa {translateBelt(user?.beltColor) || 'Branca'}
                                 </span>
                             </div>
                         </div>
+
+                        {/* Active Academy */}
+                        {myAcademies.length > 0 && (
+                            <div className="pt-2 border-t border-neutral-200">
+                                {myAcademies.length === 1 ? (
+                                    <div className="flex items-center gap-2 text-sm text-neutral-600 px-1 py-1">
+                                        <Building2 className="h-4 w-4 shrink-0 text-primary" />
+                                        <span className="truncate font-medium">{activeAcademy?.name || myAcademies[0].name}</span>
+                                    </div>
+                                ) : (
+                                    <div className="relative">
+                                        <Building2 className="h-4 w-4 shrink-0 text-primary absolute left-1 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                        <select
+                                            value={activeAcademy?.id || ''}
+                                            onChange={(e) => setActiveAcademy(e.target.value)}
+                                            className="w-full text-sm font-medium pl-6 pr-8 py-1.5 bg-white border rounded-md shadow-sm text-neutral-800 appearance-none focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary cursor-pointer"
+                                        >
+                                            {myAcademies.map(acc => (
+                                                <option key={acc.id} value={acc.id}>
+                                                    {acc.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <ChevronDown className="h-3.5 w-3.5 text-neutral-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     {/* Navigation */}

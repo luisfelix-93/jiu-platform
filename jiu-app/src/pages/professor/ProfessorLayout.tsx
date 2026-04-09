@@ -1,10 +1,19 @@
-import { Outlet } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Outlet, useLocation } from 'react-router-dom';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
-import { Home, Users, ClipboardCheck, Video, Calendar, TrendingUp } from 'lucide-react';
+import { Home, Users, ClipboardCheck, Video, Calendar, TrendingUp, Loader2 } from 'lucide-react';
 import { useAuthStore } from '../../stores/useAuthStore';
+import { useAcademyStore } from '../../stores/useAcademyStore';
+import { AcademyOnboarding } from '../../components/academy/AcademyOnboarding';
 
 export const ProfessorLayout = () => {
     const { user } = useAuthStore();
+    const location = useLocation();
+    const { myAcademies, isLoading, fetchMyAcademies } = useAcademyStore();
+
+    useEffect(() => {
+        fetchMyAcademies();
+    }, [fetchMyAcademies]);
 
     const baseNavItems = [
         { label: 'Início', href: '/professor', icon: <Home className="h-5 w-5" />, end: true },
@@ -25,9 +34,22 @@ export const ProfessorLayout = () => {
         ? [...baseNavItems, ...studentNavItems]
         : baseNavItems;
 
+    const isProfilePage = location.pathname === '/professor/perfil';
+    const showOnboarding = !isProfilePage && !isLoading && myAcademies.length === 0;
+
     return (
         <DashboardLayout navItems={navItems}>
-            <Outlet />
+            {isLoading && myAcademies.length === 0 ? (
+                <div className="flex justify-center items-center h-full">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+            ) : showOnboarding ? (
+                <div className="flex flex-col justify-start pt-10 h-full">
+                    <AcademyOnboarding />
+                </div>
+            ) : (
+                <Outlet />
+            )}
         </DashboardLayout>
     );
 };

@@ -13,7 +13,8 @@ export class ClassController {
 
     static async list(req: Request, res: Response) {
         try {
-            const result = await ClassService.listClasses();
+            const academyIds = req.user?.academyIds;
+            const result = await ClassService.listClasses(academyIds);
             res.json(result);
         } catch (error: any) {
             res.status(400).json({ error: error.message });

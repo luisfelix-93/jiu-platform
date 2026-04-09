@@ -2,11 +2,13 @@ import { Router } from "express";
 import { LessonController } from "../controllers/LessonController";
 import { AttendanceController } from "../controllers/AttendanceController";
 import { authMiddleware, checkRole } from "../middlewares/auth.middleware";
+import { academyScopeMiddleware } from "../middlewares/academy-scope.middleware";
 import { UserRole } from "../entities/User";
 
 const router = Router();
 
 router.use(authMiddleware);
+router.use(academyScopeMiddleware);
 
 router.get("/", LessonController.list);
 router.get("/upcoming", LessonController.getUpcoming);

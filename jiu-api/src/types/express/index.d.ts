@@ -3,6 +3,7 @@ declare namespace Express {
         user?: {
             userId: string;
             role: string;
+            academyIds?: string[];
             [key: string]: any;
         };
     }

@@ -14,6 +14,7 @@ import attendanceRoutes from "./routes/attendance.routes";
 import contentRoutes from "./routes/content.routes";
 import dashboardRoutes from "./routes/dashboard.routes";
 import graduationRoutes from "./routes/graduation.routes";
+import academyRoutes from "./routes/academy.routes";
 
 const app = express();
 
@@ -63,6 +64,7 @@ app.use(express.json());
 
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/academies", academyRoutes);
 app.use("/api/classes", classRoutes);
 app.use("/api/lessons", lessonRoutes);
 app.use("/api/attendance", attendanceRoutes);

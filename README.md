@@ -15,11 +15,26 @@ O projeto funciona como um monorepo contendo:
 - Cadastro e autenticação de usuários (alunos, professores, administradores)
 - Perfis personalizados com informações detalhadas
 - Controle de acesso baseado em roles
+- **Multi-Academia**: Professores podem cadastrar suas academias com endereço e telefone
+
+### 🏫 Multi-Academia
+- Cadastro de academias com nome, endereço e telefone
+- Matrícula de alunos em academias específicas
+- Filtro de dados por academia (turmas, aulas, presenças)
+- Fluxo de onboarding para professores
+- Migração automática de alunos existentes para academia default
 
 ### 📅 Agendamento e Aulas
 - Sistema de agendamento de aulas por turmas
 - Calendário interativo para visualização de aulas
 - Controle de presença e frequência
+
+### 🥋 Sistema de Graduação
+- Registro e acompanhamento de faixas (branco a preto)
+- Cálculo automático de progressão baseado em frequência
+- Metas customizáveis de tempo e aulas necessárias
+- Interface para professores promoverem alunos
+- Dashboard de progresso para alunos
 
 ### 🥋 Sistema de Graduação
 - Registro e acompanhamento de faixas (branco a preto)
@@ -116,6 +131,19 @@ npm run dev
 - `npm run build`: Compila o projeto para produção.
 - `npm run lint`: Executa a verificação de código com ESLint.
 - `npm run preview`: Visualiza o build de produção localmente.
+
+## 🗺️ Roadmap
+
+A plataforma está em constante evolução. Veja as próximas melhorias planejadas:
+
+1. **Multi-Acadademia** ✅ *(Implementado)* - Gestão de múltiplas academias
+2. **Sistema de Mensalidades** - Registro de pagamentos e inadimplência
+3. **Múltiplos Professores por Academia** - Vários professores na mesma academia
+4. **App Mobile (React Native)** - Aplicativo nativo para iOS e Android
+5. **Sistema de Avaliação** - Feedback dos professores aos alunos
+6. **Eventos e Competições** - Cadastro e inscrição em eventos
+
+Consulte `doc/roadmap.md` para detalhes completos das melhorias futuras.
 
 ## 🤝 Contribuição
 

@@ -6,9 +6,13 @@ import { useAuthStore } from '../../stores/useAuthStore';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
-import { User, Phone } from 'lucide-react';
+import { User, Phone, Building2, Plus, LogOut } from 'lucide-react';
 import { AuthService } from '../../services/auth.service';
 import { translateBelt } from '../../utils/belt';
+import { useAcademyStore } from '../../stores/useAcademyStore';
+import { Modal } from '../../components/ui/Modal';
+import { AcademySelect } from '../../components/academy/AcademySelect';
+import type { Academy } from '../../types/academy';
 
 const profileSchema = z.object({
     name: z.string().min(2, 'Nome deve ter no mínimo 2 caracteres'),
@@ -22,8 +26,12 @@ type ProfileSchema = z.infer<typeof profileSchema>;
 
 export const StudentProfile = () => {
     const { user, updateUser } = useAuthStore();
+    const { myAcademies, enrollInAcademy, leaveAcademy } = useAcademyStore();
     const [successMessage, setSuccessMessage] = useState('');
     const [error, setError] = useState('');
+
+    const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
+    const [isProcessing, setIsProcessing] = useState(false);
 
     // Pre-fill form with user data + profile data if available
     // Note: user object from stats/me might need to be refreshed or we use what's in store
@@ -179,6 +187,99 @@ export const StudentProfile = () => {
                     </form>
                 </CardContent>
             </Card>
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                    <CardTitle className="flex items-center gap-2">
+                        <Building2 className="h-5 w-5" />
+                        Minhas Academias
+                    </CardTitle>
+                    <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => setIsJoinModalOpen(true)}
+                    >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Associar-me a uma academia
+                    </Button>
+                </CardHeader>
+                <CardContent>
+                    {myAcademies.length === 0 ? (
+                        <p className="text-neutral-500 text-sm py-4">
+                            Você não está matriculado em nenhuma academia no momento. Associe-se para ver suas turmas e aulas.
+                        </p>
+                    ) : (
+                        <div className="space-y-4">
+                            {myAcademies.map((academy) => (
+                                <div key={academy.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border rounded-lg gap-4">
+                                    <div className="flex items-center gap-4">
+                                        {academy.logoUrl ? (
+                                            <img src={academy.logoUrl} alt={academy.name} className="h-12 w-12 rounded-md object-cover bg-neutral-100" />
+                                        ) : (
+                                            <div className="h-12 w-12 flex items-center justify-center rounded-md bg-neutral-100 text-neutral-400">
+                                                <Building2 className="h-6 w-6" />
+                                            </div>
+                                        )}
+                                        <div>
+                                            <h4 className="font-semibold text-neutral-900">{academy.name}</h4>
+                                            <div className="flex items-center gap-2 mt-1">
+                                                <span className="text-xs text-neutral-500">
+                                                    Desde {new Date(academy.enrolledAt || academy.createdAt).toLocaleDateString()}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <Button
+                                        variant="danger"
+                                        size="sm"
+                                        disabled={isProcessing}
+                                        onClick={async () => {
+                                            if (window.confirm(`Tem certeza que deseja sair da academia ${academy.name}? Você perderá acesso às aulas dessa academia.`)) {
+                                                setIsProcessing(true);
+                                                try {
+                                                    await leaveAcademy(academy.id);
+                                                    setSuccessMessage(`Você saiu da academia ${academy.name}.`);
+                                                } catch (err: any) {
+                                                    setError(err.message || 'Erro ao sair da academia');
+                                                } finally {
+                                                    setIsProcessing(false);
+                                                }
+                                            }
+                                        }}
+                                    >
+                                        <LogOut className="h-4 w-4 mr-2" />
+                                        Sair da Academia
+                                    </Button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+
+            <Modal 
+                isOpen={isJoinModalOpen} 
+                onClose={() => setIsJoinModalOpen(false)}
+                title="Buscar Academia"
+                maxWidth="max-w-2xl"
+            >
+                <div className="py-2">
+                    <p className="text-sm text-neutral-600 mb-4">Busque pelo nome da academia que deseja se matricular.</p>
+                    <AcademySelect 
+                        onSelect={async (academy: Academy) => {
+                            setIsProcessing(true);
+                            try {
+                                await enrollInAcademy(academy.id);
+                                setSuccessMessage(`Matriculado na academia ${academy.name} com sucesso!`);
+                                setIsJoinModalOpen(false);
+                            } catch (err: any) {
+                                setError(err.message || 'Erro ao se matricular');
+                            } finally {
+                                setIsProcessing(false);
+                            }
+                        }} 
+                    />
+                </div>
+            </Modal>
         </div>
     );
 };
