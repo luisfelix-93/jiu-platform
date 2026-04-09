@@ -6,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Ca
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { ClassService, type Class } from '../../services/class.service';
+import { AcademyService } from '../../services/academy.service';
+import type { Academy } from '../../types/academy';
 import { Plus, Users, Calendar } from 'lucide-react';
 
 const createClassSchema = z.object({
@@ -14,6 +16,7 @@ const createClassSchema = z.object({
     days: z.string().min(1, "Selecione pelo menos um dia"),
     time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Horário inválido (HH:MM)"),
     maxStudents: z.string().transform(val => parseInt(val, 10)).optional(),
+    academyId: z.string().min(1, "Selecione uma academia"),
 });
 
 export const ProfessorClasses = () => {
@@ -22,6 +25,7 @@ export const ProfessorClasses = () => {
     const [isCreating, setIsCreating] = useState(false);
     const [showForm, setShowForm] = useState(false);
     const [editingClass, setEditingClass] = useState<Class | null>(null);
+    const [academies, setAcademies] = useState<Academy[]>([]);
 
     const { register, handleSubmit, reset, formState: { errors } } = useForm<any>({ // Use any to bypass transform type mismatch for now
         resolver: zodResolver(createClassSchema)
@@ -40,6 +44,7 @@ export const ProfessorClasses = () => {
 
     useEffect(() => {
         fetchClasses();
+        AcademyService.getMyAcademies().then(setAcademies).catch(console.error);
     }, []);
 
     const onSubmit = async (data: any) => {
@@ -54,7 +59,8 @@ export const ProfessorClasses = () => {
                 name: data.name,
                 description: data.description || '',
                 schedule,
-                maxStudents: data.maxStudents || 20
+                maxStudents: data.maxStudents || 20,
+                academyId: data.academyId,
             };
 
             if (editingClass) {
@@ -84,7 +90,8 @@ export const ProfessorClasses = () => {
             description: cls.description,
             days: cls.schedule.days.join(', '),
             time: cls.schedule.time,
-            maxStudents: cls.maxStudents
+            maxStudents: cls.maxStudents,
+            academyId: cls.academyId || '',
         });
         // Scroll to top to see form
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -112,7 +119,8 @@ export const ProfessorClasses = () => {
             description: '',
             days: '',
             time: '',
-            maxStudents: ''
+            maxStudents: '',
+            academyId: academies.length === 1 ? academies[0].id : '',
         });
         setShowForm(!showForm);
     };
@@ -140,6 +148,21 @@ export const ProfessorClasses = () => {
                     <CardContent>
                         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                             <div className="grid md:grid-cols-2 gap-4">
+                                {academies.length > 1 && (
+                                    <div className="space-y-1 md:col-span-2">
+                                        <label className="text-sm font-medium">Academia</label>
+                                        <select
+                                            {...register('academyId')}
+                                            className="flex h-10 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-50"
+                                        >
+                                            <option value="">Selecione uma academia</option>
+                                            {academies.map(a => (
+                                                <option key={a.id} value={a.id}>{a.name}</option>
+                                            ))}
+                                        </select>
+                                        {errors.academyId && <span className="text-xs text-red-500">{errors.academyId.message as string}</span>}
+                                    </div>
+                                )}
                                 <Input label="Nome da Turma" placeholder="Ex: Jiu-Jitsu Iniciante" error={errors.name?.message as string} {...register('name')} />
                                 <Input label="Descrição" placeholder="Ex: Foco em fundamentos" error={errors.description?.message as string} {...register('description')} />
                                 <Input label="Dias (separados por vírgula)" placeholder="Ex: seg, qua, sex" error={errors.days?.message as string} {...register('days')} />
