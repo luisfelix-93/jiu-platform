@@ -31,10 +31,24 @@ export class GraduationController {
     static async promoteStudent(req: Request, res: Response) {
         try {
             const { id } = req.params;
-            // Logic to promote belt/stripe would go here.
-            // For now verifying if we need this based on user request "edit missing classes"
-            // The user asked to "put a stripe", so we might need this.
             const result = await UserService.promoteStudent(id);
+            res.json(result);
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    static async adjustAttendance(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const schema = z.object({
+                newCount: z.number().min(0)
+            });
+
+            const { newCount } = schema.parse(req.body);
+            const adjustedBy = (req as any).userId;
+
+            const result = await UserService.adjustAttendanceCount(id, newCount, adjustedBy);
             res.json(result);
         } catch (error: any) {
             res.status(400).json({ error: error.message });
