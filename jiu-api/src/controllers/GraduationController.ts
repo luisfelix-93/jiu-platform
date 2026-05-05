@@ -46,7 +46,11 @@ export class GraduationController {
             });
 
             const { newCount } = schema.parse(req.body);
-            const adjustedBy = (req as any).userId;
+            const adjustedBy = (req as any).user?.userId;
+
+            if (!adjustedBy) {
+                throw new Error("Authenticated user not found");
+            }
 
             const result = await UserService.adjustAttendanceCount(id, newCount, adjustedBy);
             res.json(result);
