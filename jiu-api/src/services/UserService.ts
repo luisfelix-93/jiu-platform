@@ -1,6 +1,7 @@
 import { AppDataSource } from "../data-source";
 import { User } from "../entities/User";
 import { Profile } from "../entities/Profile";
+import { Attendance } from "../entities/Attendance";
 import { UserRole } from "../entities/User";
 import * as bcrypt from "bcrypt";
 import { BELT_ORDER_KIDS, BELT_ORDER_ADULT, ADULT_AGE } from "../constants/belt.constants";
@@ -8,6 +9,7 @@ import { calculateAge } from "../utils/date.utils";
 
 const userRepository = AppDataSource.getRepository(User);
 const profileRepository = AppDataSource.getRepository(Profile);
+const attendanceRepository = AppDataSource.getRepository(Attendance);
 
 export class UserService {
     static async getProfile(userId: string) {
@@ -187,5 +189,59 @@ export class UserService {
         }
 
         await userRepository.remove(user);
+    }
+
+    static async adjustAttendanceCount(userId: string, newCount: number, adjustedBy: string) {
+        const user = await userRepository.findOneBy({ id: userId });
+        if (!user) throw new Error("User not found");
+
+        // Get current real attendance count (present status only)
+        const currentCount = await attendanceRepository.count({
+            where: { userId, status: "present" }
+        });
+
+        const delta = newCount - currentCount;
+
+        if (delta === 0) return { attendanceCount: currentCount, adjusted: 0 };
+
+        if (delta > 0) {
+            // Insert manual credit records
+            const credits: Partial<Attendance>[] = [];
+            for (let i = 0; i < delta; i++) {
+                credits.push({
+                    userId,
+                    lessonId: undefined,
+                    status: "present",
+                    isManualCredit: true,
+                    notes: `Crédito manual adicionado por professor (${adjustedBy})`,
+                    checkInTime: new Date(),
+                });
+            }
+            await attendanceRepository.save(credits);
+        } else {
+            // Remove manual credits (oldest first)
+            const toRemove = Math.abs(delta);
+            const manualCredits = await attendanceRepository.find({
+                where: { userId, isManualCredit: true },
+                order: { createdAt: "ASC" },
+                take: toRemove,
+            });
+
+            if (manualCredits.length < toRemove) {
+                throw new Error(
+                    `Só é possível remover ${manualCredits.length} créditos manuais. ` +
+                    `Presenças reais não podem ser removidas por aqui.`
+                );
+            }
+
+            await attendanceRepository.remove(manualCredits);
+        }
+
+        // Return updated count
+        const updatedCount = await attendanceRepository.count({
+            where: { userId, status: "present" }
+        });
+
+        return { attendanceCount: updatedCount, adjusted: delta };
     }
 }

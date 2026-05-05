@@ -18,8 +18,11 @@ interface Student {
 export const Graduation = () => {
     const [students, setStudents] = useState<Student[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [editingId, setEditingId] = useState<string | null>(null);
-    const [editValue, setEditValue] = useState<string>('');
+    const [editingGoalId, setEditingGoalId] = useState<string | null>(null);
+    const [editGoalValue, setEditGoalValue] = useState<string>('');
+    const [editingAttendanceId, setEditingAttendanceId] = useState<string | null>(null);
+    const [editAttendanceValue, setEditAttendanceValue] = useState<string>('');
+    const [savingAttendance, setSavingAttendance] = useState(false);
 
     useEffect(() => {
         fetchStudents();
@@ -45,34 +48,68 @@ export const Graduation = () => {
         if (!confirm(message)) return;
         try {
             await api.post(`/graduation/students/${student.id}/promote`);
-            // Refresh list or update local state
             fetchStudents();
         } catch (error) {
             alert("Erro ao promover aluno");
         }
     };
 
-    const startEditing = (student: Student) => {
-        setEditingId(student.id);
+    // --- Goal editing ---
+    const startEditingGoal = (student: Student) => {
+        setEditingGoalId(student.id);
         const remaining = student.nextGraduationGoal
             ? Math.max(0, student.nextGraduationGoal - student.attendanceCount)
             : 0;
-        setEditValue(remaining.toString());
+        setEditGoalValue(remaining.toString());
     };
 
     const saveGoal = async (student: Student) => {
-        const remaining = parseInt(editValue);
+        const remaining = parseInt(editGoalValue);
         if (isNaN(remaining)) return;
 
         const newGoal = student.attendanceCount + remaining;
 
         try {
             await api.patch(`/graduation/students/${student.id}/goal`, { goal: newGoal });
-            setEditingId(null);
+            setEditingGoalId(null);
             fetchStudents();
         } catch (error) {
             alert("Erro ao atualizar meta");
         }
+    };
+
+    // --- Attendance editing ---
+    const startEditingAttendance = (student: Student) => {
+        setEditingAttendanceId(student.id);
+        setEditAttendanceValue(student.attendanceCount.toString());
+    };
+
+    const saveAttendance = async (student: Student) => {
+        const newCount = parseInt(editAttendanceValue);
+        if (isNaN(newCount) || newCount < 0) return;
+        if (newCount === student.attendanceCount) {
+            setEditingAttendanceId(null);
+            return;
+        }
+
+        setSavingAttendance(true);
+        try {
+            await api.post(`/graduation/students/${student.id}/adjust-attendance`, {
+                newCount,
+            });
+            setEditingAttendanceId(null);
+            fetchStudents();
+        } catch (error: any) {
+            const msg = error?.response?.data?.error || "Erro ao ajustar presenças";
+            alert(msg);
+        } finally {
+            setSavingAttendance(false);
+        }
+    };
+
+    const handleAttendanceKeyDown = (e: React.KeyboardEvent, student: Student) => {
+        if (e.key === 'Enter') saveAttendance(student);
+        if (e.key === 'Escape') setEditingAttendanceId(null);
     };
 
     const getRowColor = (student: Student) => {
@@ -128,21 +165,63 @@ export const Graduation = () => {
                                                         ))}
                                                     </div>
                                                 </td>
-                                                <td className="p-4">{student.attendanceCount}</td>
+                                                {/* Editable Attendance Count */}
                                                 <td className="p-4">
-                                                    {editingId === student.id ? (
+                                                    {editingAttendanceId === student.id ? (
                                                         <div className="flex gap-2 items-center">
                                                             <Input
                                                                 type="number"
-                                                                value={editValue}
-                                                                onChange={(e) => setEditValue(e.target.value)}
+                                                                min="0"
+                                                                value={editAttendanceValue}
+                                                                onChange={(e) => setEditAttendanceValue(e.target.value)}
+                                                                onKeyDown={(e) => handleAttendanceKeyDown(e, student)}
+                                                                className="w-20 h-8"
+                                                                autoFocus
+                                                                disabled={savingAttendance}
+                                                            />
+                                                            <Button
+                                                                onClick={() => saveAttendance(student)}
+                                                                size="sm"
+                                                                variant="primary"
+                                                                disabled={savingAttendance}
+                                                            >
+                                                                {savingAttendance ? '...' : 'Ok'}
+                                                            </Button>
+                                                            <Button
+                                                                onClick={() => setEditingAttendanceId(null)}
+                                                                size="sm"
+                                                                variant="ghost"
+                                                                disabled={savingAttendance}
+                                                            >
+                                                                X
+                                                            </Button>
+                                                        </div>
+                                                    ) : (
+                                                        <div
+                                                            className="flex items-center gap-2 cursor-pointer hover:text-primary"
+                                                            onClick={() => startEditingAttendance(student)}
+                                                            title="Clique para editar a quantidade de presenças"
+                                                        >
+                                                            <span>{student.attendanceCount}</span>
+                                                            <span className="text-xs text-neutral-400">(Editar)</span>
+                                                        </div>
+                                                    )}
+                                                </td>
+                                                {/* Editable Goal (remaining classes) */}
+                                                <td className="p-4">
+                                                    {editingGoalId === student.id ? (
+                                                        <div className="flex gap-2 items-center">
+                                                            <Input
+                                                                type="number"
+                                                                value={editGoalValue}
+                                                                onChange={(e) => setEditGoalValue(e.target.value)}
                                                                 className="w-20 h-8"
                                                             />
                                                             <Button onClick={() => saveGoal(student)} size="sm" variant="primary">Ok</Button>
-                                                            <Button onClick={() => setEditingId(null)} size="sm" variant="ghost">X</Button>
+                                                            <Button onClick={() => setEditingGoalId(null)} size="sm" variant="ghost">X</Button>
                                                         </div>
                                                     ) : (
-                                                        <div className="flex items-center gap-2 cursor-pointer hover:text-primary" onClick={() => startEditing(student)}>
+                                                        <div className="flex items-center gap-2 cursor-pointer hover:text-primary" onClick={() => startEditingGoal(student)}>
                                                             <span>{remaining}</span>
                                                             <span className="text-xs text-neutral-400">(Editar)</span>
                                                         </div>
@@ -169,4 +248,3 @@ export const Graduation = () => {
         </div>
     );
 };
-

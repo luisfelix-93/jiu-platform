@@ -10,5 +10,7 @@ router.use(checkRole(["professor", "admin"]));
 router.get("/students", GraduationController.listStudents);
 router.patch("/students/:id/goal", GraduationController.updateGoal);
 router.post("/students/:id/promote", GraduationController.promoteStudent);
+router.post("/students/:id/adjust-attendance", GraduationController.adjustAttendance);
 
 export default router;
+
