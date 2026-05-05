@@ -213,7 +213,7 @@ export class UserService {
                     lessonId: undefined,
                     status: "present",
                     isManualCredit: true,
-                    notes: `Crédito manual adicionado por professor`,
+                    notes: `Crédito manual adicionado por professor (${adjustedBy})`,
                     checkInTime: new Date(),
                 });
             }
