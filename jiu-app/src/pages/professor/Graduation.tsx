@@ -12,6 +12,7 @@ interface Student {
     stripeCount: number;
     attendanceCount: number;
     nextGraduationGoal: number | null;
+    lastGraduationDate: string | null;
     avatarUrl: string;
 }
 
@@ -23,6 +24,10 @@ export const Graduation = () => {
     const [editingAttendanceId, setEditingAttendanceId] = useState<string | null>(null);
     const [editAttendanceValue, setEditAttendanceValue] = useState<string>('');
     const [savingAttendance, setSavingAttendance] = useState(false);
+    
+    const [editingDateId, setEditingDateId] = useState<string | null>(null);
+    const [editDateValue, setEditDateValue] = useState<string>('');
+    const [savingDate, setSavingDate] = useState(false);
 
     useEffect(() => {
         fetchStudents();
@@ -112,6 +117,46 @@ export const Graduation = () => {
         if (e.key === 'Escape') setEditingAttendanceId(null);
     };
 
+    // --- Graduation Date editing ---
+    const startEditingDate = (student: Student) => {
+        setEditingDateId(student.id);
+        if (student.lastGraduationDate) {
+            const date = new Date(student.lastGraduationDate);
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            setEditDateValue(`${year}-${month}-${day}`);
+        } else {
+            setEditDateValue('');
+        }
+    };
+
+    const saveDate = async (student: Student) => {
+        setSavingDate(true);
+        try {
+            let isoDate = null;
+            if (editDateValue) {
+                const [year, month, day] = editDateValue.split('-');
+                const d = new Date(Number(year), Number(month) - 1, Number(day), 23, 59, 59, 999);
+                isoDate = d.toISOString();
+            }
+            await api.patch(`/graduation/students/${student.id}/graduation-date`, { 
+                date: isoDate 
+            });
+            setEditingDateId(null);
+            fetchStudents();
+        } catch (error) {
+            alert("Erro ao atualizar data de graduação");
+        } finally {
+            setSavingDate(false);
+        }
+    };
+
+    const handleDateKeyDown = (e: React.KeyboardEvent, student: Student) => {
+        if (e.key === 'Enter') saveDate(student);
+        if (e.key === 'Escape') setEditingDateId(null);
+    };
+
     const getRowColor = (student: Student) => {
         const remaining = student.nextGraduationGoal
             ? Math.max(0, student.nextGraduationGoal - student.attendanceCount)
@@ -140,6 +185,7 @@ export const Graduation = () => {
                                         <th className="p-4">Aluno</th>
                                         <th className="p-4">Faixa</th>
                                         <th className="p-4">Graus</th>
+                                        <th className="p-4">Última Graduação</th>
                                         <th className="p-4">Aulas Concluídas</th>
                                         <th className="p-4">Aulas Faltantes (Meta)</th>
                                         <th className="p-4">Ações</th>
@@ -164,6 +210,51 @@ export const Graduation = () => {
                                                             />
                                                         ))}
                                                     </div>
+                                                </td>
+                                                {/* Editable Graduation Date */}
+                                                <td className="p-4">
+                                                    {editingDateId === student.id ? (
+                                                        <div className="flex gap-2 items-center">
+                                                            <Input
+                                                                type="date"
+                                                                value={editDateValue}
+                                                                onChange={(e) => setEditDateValue(e.target.value)}
+                                                                onKeyDown={(e) => handleDateKeyDown(e, student)}
+                                                                className="w-36 h-8"
+                                                                autoFocus
+                                                                disabled={savingDate}
+                                                            />
+                                                            <Button
+                                                                onClick={() => saveDate(student)}
+                                                                size="sm"
+                                                                variant="primary"
+                                                                disabled={savingDate}
+                                                            >
+                                                                {savingDate ? '...' : 'Ok'}
+                                                            </Button>
+                                                            <Button
+                                                                onClick={() => setEditingDateId(null)}
+                                                                size="sm"
+                                                                variant="ghost"
+                                                                disabled={savingDate}
+                                                            >
+                                                                X
+                                                            </Button>
+                                                        </div>
+                                                    ) : (
+                                                        <div
+                                                            className="flex items-center gap-2 cursor-pointer hover:text-primary"
+                                                            onClick={() => startEditingDate(student)}
+                                                            title="Clique para editar a data da última graduação"
+                                                        >
+                                                            <span>
+                                                                {student.lastGraduationDate 
+                                                                    ? new Date(student.lastGraduationDate).toLocaleDateString() 
+                                                                    : 'N/D'}
+                                                            </span>
+                                                            <span className="text-xs text-neutral-400">(Editar)</span>
+                                                        </div>
+                                                    )}
                                                 </td>
                                                 {/* Editable Attendance Count */}
                                                 <td className="p-4">
