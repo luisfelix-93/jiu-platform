@@ -422,3 +422,22 @@ Derived from `docs/PLAN-multi-academia.md`.
 - [x] Professor sem academia vê tela de onboarding no dashboard.
 - [x] Professor membro não consegue editar academia (403).
 - [x] `npx tsc --noEmit` e `npm run lint` passam sem erros.
+
+# Correção: Aulas não zeram ao graduar (Opção A)
+
+Implementação da solução onde a contagem de aulas é resetada baseada em uma data de graduação.
+
+## Backend
+- [x] **Entidade User:** Adicionar o campo `lastGraduationDate` (nullable).
+- [x] **Migration:** Criar migration `AddLastGraduationDate` para o banco de dados.
+- [x] **UserService:** 
+    - Atualizar `promoteStudent` para registrar a data ao promover.
+    - Atualizar `listStudentsWithGraduationInfo` para filtrar aulas criadas após a última graduação.
+    - Atualizar `adjustAttendanceCount` para também respeitar o filtro da data.
+- [x] **GraduationController:** Criar endpoint `updateGraduationDate` para que professores possam corrigir alunos que já graduaram.
+- [x] **Rotas:** Adicionar a rota `PATCH /students/:id/graduation-date` em `graduation.routes.ts`.
+
+## Frontend
+- [x] **Página de Graduação (`Graduation.tsx`):**
+    - Mostrar a data da última graduação (se houver).
+    - Criar interface (modal ou inline) para o professor editar a data de graduação do aluno.

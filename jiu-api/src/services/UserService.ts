@@ -1,3 +1,4 @@
+import { MoreThan } from "typeorm";
 import { AppDataSource } from "../data-source";
 import { User } from "../entities/User";
 import { Profile } from "../entities/Profile";
@@ -62,10 +63,12 @@ export class UserService {
 
     static async listStudentsWithGraduationInfo() {
         const students = await userRepository.createQueryBuilder("user")
-            .select(["user.id", "user.name", "user.beltColor", "user.stripeCount", "user.nextGraduationGoal", "user.avatarUrl"])
+            .select(["user.id", "user.name", "user.beltColor", "user.stripeCount", "user.nextGraduationGoal", "user.avatarUrl", "user.lastGraduationDate"])
             .where("user.role = :role", { role: UserRole.ALUNO })
             .loadRelationCountAndMap("user.attendanceCount", "user.attendances", "attendance", qb =>
-                qb.where("attendance.status = :status", { status: "present" })
+                qb.innerJoin("attendance.user", "userAlias")
+                  .where("attendance.status = :status", { status: "present" })
+                  .andWhere(`"attendance"."created_at" > COALESCE("userAlias"."last_graduation_date", '1970-01-01')`)
             )
             .getMany();
 
@@ -77,6 +80,14 @@ export class UserService {
         if (!user) throw new Error("User not found");
 
         user.nextGraduationGoal = goal;
+        return await userRepository.save(user);
+    }
+
+    static async updateGraduationDate(userId: string, date: Date | null) {
+        const user = await userRepository.findOneBy({ id: userId });
+        if (!user) throw new Error("User not found");
+
+        user.lastGraduationDate = date;
         return await userRepository.save(user);
     }
 
@@ -122,6 +133,11 @@ export class UserService {
             // Just add a stripe
             user.stripeCount = (user.stripeCount || 0) + 1;
         }
+
+        // Reset graduation cycle: mark the graduation date to the very end of today so today's attendances don't count for the next belt
+        const now = new Date();
+        now.setHours(23, 59, 59, 999);
+        user.lastGraduationDate = now;
 
         const savedUser = await userRepository.save(user);
 
@@ -195,10 +211,13 @@ export class UserService {
         const user = await userRepository.findOneBy({ id: userId });
         if (!user) throw new Error("User not found");
 
-        // Get current real attendance count (present status only)
-        const currentCount = await attendanceRepository.count({
-            where: { userId, status: "present" }
-        });
+        // Build filter: only count attendance after last graduation
+        const graduationFilter = user.lastGraduationDate
+            ? { userId, status: "present", createdAt: MoreThan(user.lastGraduationDate) }
+            : { userId, status: "present" };
+
+        // Get current attendance count (post-graduation only)
+        const currentCount = await attendanceRepository.count({ where: graduationFilter });
 
         const delta = newCount - currentCount;
 
@@ -219,10 +238,14 @@ export class UserService {
             }
             await attendanceRepository.save(credits);
         } else {
-            // Remove manual credits (oldest first)
+            // Remove manual credits (oldest first, post-graduation only)
             const toRemove = Math.abs(delta);
+            const manualCreditFilter = user.lastGraduationDate
+                ? { userId, isManualCredit: true, createdAt: MoreThan(user.lastGraduationDate) }
+                : { userId, isManualCredit: true };
+
             const manualCredits = await attendanceRepository.find({
-                where: { userId, isManualCredit: true },
+                where: manualCreditFilter,
                 order: { createdAt: "ASC" },
                 take: toRemove,
             });
@@ -237,10 +260,8 @@ export class UserService {
             await attendanceRepository.remove(manualCredits);
         }
 
-        // Return updated count
-        const updatedCount = await attendanceRepository.count({
-            where: { userId, status: "present" }
-        });
+        // Return updated count (post-graduation only)
+        const updatedCount = await attendanceRepository.count({ where: graduationFilter });
 
         return { attendanceCount: updatedCount, adjusted: delta };
     }

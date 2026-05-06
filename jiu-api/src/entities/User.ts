@@ -41,6 +41,9 @@ export class User {
     @Column({ name: "next_graduation_goal", nullable: true })
     nextGraduationGoal: number;
 
+    @Column({ name: "last_graduation_date", type: "timestamp", nullable: true })
+    lastGraduationDate: Date | null;
+
     @Column({ name: "is_active", default: true })
     isActive: boolean;
 

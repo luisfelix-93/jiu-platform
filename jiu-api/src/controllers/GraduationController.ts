@@ -58,4 +58,20 @@ export class GraduationController {
             res.status(400).json({ error: error.message });
         }
     }
+
+    static async updateGraduationDate(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const schema = z.object({
+                date: z.string().nullable()
+            });
+
+            const { date } = schema.parse(req.body);
+            
+            const result = await UserService.updateGraduationDate(id, date ? new Date(date) : null);
+            res.json(result);
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
 }
