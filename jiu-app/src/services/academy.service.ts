@@ -38,6 +38,12 @@ export const AcademyService = {
         return response.data;
     },
 
+    // Professor - Self-join an existing academy
+    async joinAsProfessor(academyId: string): Promise<any> {
+        const response = await api.post(`/academies/${academyId}/professors/join`);
+        return response.data;
+    },
+
     async removeProfessor(id: string, professorId: string): Promise<void> {
         await api.delete(`/academies/${id}/professors/${professorId}`);
     },

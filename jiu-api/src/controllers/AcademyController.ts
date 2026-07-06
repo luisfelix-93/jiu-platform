@@ -65,6 +65,16 @@ export class AcademyController {
         }
     }
 
+    static async join(req: Request, res: Response) {
+        try {
+            const result = await AcademyService.joinAcademy(req.params.id, req.user!.userId);
+            res.status(201).json(result);
+        } catch (error: any) {
+            const status = error.message.includes("já pertence") ? 409 : 400;
+            res.status(status).json({ error: error.message });
+        }
+    }
+
     static async addProfessor(req: Request, res: Response) {
         try {
             const validation = addProfessorSchema.safeParse(req.body);

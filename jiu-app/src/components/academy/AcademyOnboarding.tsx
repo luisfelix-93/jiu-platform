@@ -5,26 +5,32 @@ import { PlusCircle, Search, ArrowLeft, Building2 } from 'lucide-react';
 import { AcademyForm } from './AcademyForm';
 import { AcademySelect } from './AcademySelect';
 import { useAcademyStore } from '../../stores/useAcademyStore';
+import { AcademyService } from '../../services/academy.service';
 import type { Academy } from '../../types/academy';
 import { toast } from 'sonner';
 
 export function AcademyOnboarding() {
     const [view, setView] = useState<'options' | 'create' | 'join'>('options');
+    const [isJoining, setIsJoining] = useState(false);
     const { fetchMyAcademies } = useAcademyStore();
 
     const handleSuccessCreate = async () => {
         await fetchMyAcademies();
-        // The AcademyStore will automatically update and the onboarding will hide
     };
 
     const handleSelectAcademy = async (academy: Academy) => {
-        // Here we would call an API or redirect to an apply flow.
-        // For now, depending on whether it's a student (enroll) or professor (request to join).
-        // For student, it would be enrollStudent. For professor, it might be contact owner.
-        // We will just show a toast for this mockup step.
-        toast.info(`Você selecionou a ${academy.name}. Entre em contato com o responsável para ser adicionado como professor.`);
-        // Note: Students will use a different flow in their profile,
-        // this onboarding is primarily aimed at Professors without academies.
+        if (isJoining) return;
+        setIsJoining(true);
+        try {
+            await AcademyService.joinAsProfessor(academy.id);
+            toast.success(`Você foi associado à ${academy.name} com sucesso!`);
+            await fetchMyAcademies();
+        } catch (error: any) {
+            const msg = error.response?.data?.error || error.message || 'Erro ao se associar à academia';
+            toast.error(msg);
+        } finally {
+            setIsJoining(false);
+        }
     };
 
     if (view === 'create') {

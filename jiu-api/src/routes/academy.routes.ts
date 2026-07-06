@@ -22,7 +22,10 @@ router.post("/", checkRole([UserRole.PROFESSOR, UserRole.ADMIN]), AcademyControl
 // Update academy (professor owner — enforced in service)
 router.put("/:id", checkRole([UserRole.PROFESSOR, UserRole.ADMIN]), AcademyController.update);
 
-// Professor management
+// Professor self-join
+router.post("/:id/professors/join", checkRole([UserRole.PROFESSOR, UserRole.ADMIN]), AcademyController.join);
+
+// Professor management (owner only)
 router.post("/:id/professors", checkRole([UserRole.PROFESSOR, UserRole.ADMIN]), AcademyController.addProfessor);
 router.delete("/:id/professors/:userId", checkRole([UserRole.PROFESSOR, UserRole.ADMIN]), AcademyController.removeProfessor);
 

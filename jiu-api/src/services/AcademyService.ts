@@ -117,6 +117,27 @@ export class AcademyService {
         return { data: academies, total, page, limit };
     }
 
+    static async joinAcademy(academyId: string, professorId: string) {
+        const academy = await academyRepository.findOneBy({ id: academyId });
+        if (!academy) throw new Error("Academia não encontrada");
+
+        const professor = await userRepository.findOneBy({ id: professorId });
+        if (!professor) throw new Error("Professor não encontrado");
+        if (professor.role !== UserRole.PROFESSOR && professor.role !== UserRole.ADMIN) {
+            throw new Error("Apenas professores podem se associar a academias");
+        }
+
+        const existing = await academyProfessorRepository.findOneBy({ academyId, professorId });
+        if (existing) throw new Error("Você já pertence a esta academia");
+
+        const link = academyProfessorRepository.create({
+            academyId,
+            professorId,
+            role: AcademyRole.MEMBER,
+        });
+        return await academyProfessorRepository.save(link);
+    }
+
     static async addProfessorToAcademy(academyId: string, requesterId: string, targetProfessorId: string) {
         const requesterLink = await academyProfessorRepository.findOneBy({ academyId, professorId: requesterId });
         if (!requesterLink || requesterLink.role !== AcademyRole.OWNER) {
