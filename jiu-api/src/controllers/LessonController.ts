@@ -82,7 +82,7 @@ export class LessonController {
 
     static async getOne(req: Request, res: Response) {
         try {
-            const result = await LessonService.getLessonById(req.params.id);
+            const result = await LessonService.getLessonById(req.params.id as string);
             res.json(result);
         } catch (error: any) {
             res.status(404).json({ error: error.message });
@@ -92,7 +92,7 @@ export class LessonController {
     static async updateStatus(req: Request, res: Response) {
         try {
             const { status } = req.body;
-            const result = await LessonService.updateStatus(req.params.id, status);
+            const result = await LessonService.updateStatus(req.params.id as string, status);
             res.json(result);
         } catch (error: any) {
             res.status(400).json({ error: error.message });
@@ -101,7 +101,7 @@ export class LessonController {
 
     static async update(req: Request, res: Response) {
         try {
-            const result = await LessonService.updateLesson(req.params.id, req.body);
+            const result = await LessonService.updateLesson(req.params.id as string, req.body);
             res.json(result);
         } catch (error: any) {
             res.status(400).json({ error: error.message });
@@ -110,7 +110,7 @@ export class LessonController {
 
     static async delete(req: Request, res: Response) {
         try {
-            await LessonService.deleteLesson(req.params.id);
+            await LessonService.deleteLesson(req.params.id as string);
             res.status(204).send();
         } catch (error: any) {
             res.status(400).json({ error: error.message });
