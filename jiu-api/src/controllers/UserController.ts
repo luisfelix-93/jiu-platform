@@ -50,7 +50,7 @@ export class UserController {
 
     static async update(req: Request, res: Response) {
         try {
-            const result = await UserService.updateUser(req.params.id, req.body);
+            const result = await UserService.updateUser(req.params.id as string, req.body);
             res.json(result);
         } catch (error: any) {
             if (error.message === "User not found") {
@@ -62,7 +62,7 @@ export class UserController {
 
     static async delete(req: Request, res: Response) {
         try {
-            await UserService.deleteUser(req.params.id);
+            await UserService.deleteUser(req.params.id as string);
             res.json({ message: "User deleted successfully" });
         } catch (error: any) {
             if (error.message === "User not found") {
