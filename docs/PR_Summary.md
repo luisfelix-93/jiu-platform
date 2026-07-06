@@ -156,6 +156,6 @@ Para evitar recorrência deste tipo de problema:
 
 ## 📎 Referência
 
-- **Log de erro:** [`jiu-api/logs/error-20260607.txt`](../jiu-api/logs/error-20260607.txt)
+- **Log de erro:** (ver output do build/CI na Vercel)
 - **Erro TypeScript:** [TS2345 — Argument type not assignable](https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#type-assertions)
 - **Express 5 Types:** `@types/express@5.0.6`, `@types/express-serve-static-core@5.1.0`
