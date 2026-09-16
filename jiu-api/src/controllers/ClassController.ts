@@ -40,7 +40,7 @@ export class ClassController {
 
     static async getOne(req: Request, res: Response) {
         try {
-            const result = await ClassService.getClassById(req.params.id);
+            const result = await ClassService.getClassById(req.params.id as string);
             res.json(result);
         } catch (error: any) {
             res.status(404).json({ error: error.message });
@@ -51,7 +51,7 @@ export class ClassController {
         try {
             const { studentId } = req.body; // Assuming picking a student, or if self enrollment use user.id
             // If professor enrolling someone else:
-            const result = await ClassService.enrollStudent(req.params.id, studentId);
+            const result = await ClassService.enrollStudent(req.params.id as string, studentId);
             res.json(result);
         } catch (error: any) {
             res.status(400).json({ error: error.message });
@@ -60,7 +60,7 @@ export class ClassController {
 
     static async getStudents(req: Request, res: Response) {
         try {
-            const result = await ClassService.getClassStudents(req.params.id);
+            const result = await ClassService.getClassStudents(req.params.id as string);
             res.json(result);
         } catch (error: any) {
             res.status(400).json({ error: error.message });
@@ -73,7 +73,7 @@ export class ClassController {
             // Or userId from body
             // Spec says /classes/:id/enroll/:userId
             // But here I'll follow spec: DELETE /api/classes/:id/enroll/:userId
-            await ClassService.removeStudent(req.params.id, studentId); // Careful with variable naming
+            await ClassService.removeStudent(req.params.id as string, studentId as string); // Careful with variable naming
             res.json({ message: "Student removed from class" });
         } catch (error: any) {
             res.status(400).json({ error: error.message });
@@ -82,7 +82,7 @@ export class ClassController {
 
     static async update(req: Request, res: Response) {
         try {
-            const result = await ClassService.updateClass(req.params.id, req.body);
+            const result = await ClassService.updateClass(req.params.id as string, req.body);
             res.json(result);
         } catch (error: any) {
             res.status(400).json({ error: error.message });
@@ -91,7 +91,7 @@ export class ClassController {
 
     static async delete(req: Request, res: Response) {
         try {
-            await ClassService.deleteClass(req.params.id);
+            await ClassService.deleteClass(req.params.id as string);
             res.json({ message: "Class deleted successfully" });
         } catch (error: any) {
             res.status(400).json({ error: error.message });

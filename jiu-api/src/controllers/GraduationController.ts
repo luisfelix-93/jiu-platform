@@ -21,7 +21,7 @@ export class GraduationController {
 
             const { goal } = schema.parse(req.body);
 
-            const result = await UserService.updateGraduationGoal(id, goal);
+            const result = await UserService.updateGraduationGoal(id as string, goal);
             res.json(result);
         } catch (error: any) {
             res.status(400).json({ error: error.message });
@@ -31,7 +31,7 @@ export class GraduationController {
     static async promoteStudent(req: Request, res: Response) {
         try {
             const { id } = req.params;
-            const result = await UserService.promoteStudent(id);
+            const result = await UserService.promoteStudent(id as string);
             res.json(result);
         } catch (error: any) {
             res.status(400).json({ error: error.message });
@@ -52,7 +52,7 @@ export class GraduationController {
                 throw new Error("Authenticated user not found");
             }
 
-            const result = await UserService.adjustAttendanceCount(id, newCount, adjustedBy);
+            const result = await UserService.adjustAttendanceCount(id as string, newCount, adjustedBy);
             res.json(result);
         } catch (error: any) {
             res.status(400).json({ error: error.message });
@@ -68,7 +68,7 @@ export class GraduationController {
 
             const { date } = schema.parse(req.body);
             
-            const result = await UserService.updateGraduationDate(id, date ? new Date(date) : null);
+            const result = await UserService.updateGraduationDate(id as string, date ? new Date(date) : null);
             res.json(result);
         } catch (error: any) {
             res.status(400).json({ error: error.message });
