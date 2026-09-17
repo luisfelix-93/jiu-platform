@@ -12,7 +12,7 @@ export class ContentController {
             // For MVP, we assume fileUrl is passed or we handling a mock upload.
 
             const result = await ContentService.uploadContent({
-                lessonId,
+                lessonId: lessonId as string,
                 title,
                 description,
                 contentType,
@@ -27,7 +27,7 @@ export class ContentController {
 
     static async listLessonContent(req: Request, res: Response) {
         try {
-            const result = await ContentService.getLessonContent(req.params.lessonId);
+            const result = await ContentService.getLessonContent(req.params.lessonId as string);
             res.json(result);
         } catch (error: any) {
             res.status(400).json({ error: error.message });

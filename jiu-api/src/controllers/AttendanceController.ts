@@ -23,7 +23,7 @@ export class AttendanceController {
 
     static async getLessonAttendance(req: Request, res: Response) {
         try {
-            const result = await AttendanceService.getLessonAttendance(req.params.lessonId);
+            const result = await AttendanceService.getLessonAttendance(req.params.lessonId as string);
             res.json(result);
         } catch (error: any) {
             res.status(400).json({ error: error.message });
@@ -32,7 +32,7 @@ export class AttendanceController {
 
     static async getStats(req: Request, res: Response) {
         try {
-            const userId = req.params.userId || req.user!.userId;
+            const userId = (req.params.userId as string) || req.user!.userId;
             const result = await AttendanceService.getUserAttendanceStats(userId);
             res.json(result);
         } catch (error: any) {
@@ -63,7 +63,7 @@ export class AttendanceController {
             const { lessonId } = req.params;
             const userId = req.user!.userId;
 
-            const attendance = await AttendanceService.getLessonAttendance(lessonId);
+            const attendance = await AttendanceService.getLessonAttendance(lessonId as string);
             const userAttendance = attendance.find((a: any) => a.userId === userId);
 
             res.json({ checkedIn: !!userAttendance, status: userAttendance?.status });
