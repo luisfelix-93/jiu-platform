@@ -441,3 +441,52 @@ Implementação da solução onde a contagem de aulas é resetada baseada em uma
 - [x] **Página de Graduação (`Graduation.tsx`):**
     - Mostrar a data da última graduação (se houver).
     - Criar interface (modal ou inline) para o professor editar a data de graduação do aluno.
+
+# Observabilidade e Monitoração (Logs no Loki & Traces no Tempo)
+
+Derived from `docs/PLAN-observability-loki-tempo.md` na branch `feature/observability-loki-tempo`.
+
+> 🛡️ **Requisito Crítico de Resiliência:** A aplicação deve funcionar 100% normalmente sem falhas se as variáveis de telemetria (`OTEL_EXPORTER_OTLP_ENDPOINT`, `LOKI_HOST`) não estiverem configuradas no `.env`.
+
+## Fase 1 - Setup e Dependências
+- [x] **TASK-01: Instalação de Dependências no Backend (`jiu-api`)**
+    - Instalar `@opentelemetry/sdk-node`, `@opentelemetry/auto-instrumentations-node`, `@opentelemetry/exporter-trace-otlp-http`, `@opentelemetry/api`.
+    - Instalar `pino`, `pino-http`, `pino-loki` e `pino-pretty` (dev).
+- [x] **TASK-02: Variáveis de Ambiente e Resiliência (.env.example)**
+    - Adicionar configurações documentadas no `.env.example` (`OTEL_ENABLED`, `OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_SERVICE_NAME`, `OTEL_USER`, `OTEL_PASSWORD`, `LOKI_HOST`, `LOKI_USER`, `LOKI_PASSWORD`, `LOG_LEVEL`).
+    - Garantir que a ausência dessas variáveis ative o modo fallback/no-op silencioso.
+
+## Fase 2 - Tracing com OpenTelemetry e Grafana Tempo
+- [ ] **TASK-03: Bootstrapping do Tracing (`src/tracing.ts`)**
+    - Criar inicializador do OpenTelemetry Node SDK.
+    - Configurar auto-instrumentações (HTTP, Express, TypeORM/pg).
+    - Configurar exportação OTLP HTTP para o endpoint do Grafana Tempo com suporte a **Basic Auth** (`OTEL_USER` / `OTEL_PASSWORD` ou `OTEL_EXPORTER_OTLP_HEADERS`).
+    - Implementar verificação: se `OTEL_EXPORTER_OTLP_ENDPOINT` não existir ou `OTEL_ENABLED !== 'true'`, não inicializar exporters.
+    - Implementar graceful shutdown (`SIGTERM`/`SIGINT`).
+- [ ] **TASK-04: Integração do Tracing no Servidor**
+    - Importar `./tracing` no início de `src/server.ts` e ajustar scripts de inicialização.
+    - Validar compatibilidade com build (`npm run build`).
+
+## Fase 3 - Logging Estruturado com Pino e Grafana Loki
+- [ ] **TASK-05: Logger Estruturado com Correlação OTel (`src/utils/logger.ts`)**
+    - Configurar Pino com injeção automática de `trace_id` e `span_id` a partir do span ativo do OpenTelemetry.
+    - Configurar transporte assíncrono para o Loki quando `LOKI_HOST` estiver definido.
+    - Configurar fallback limpo para `stdout` quando `LOKI_HOST` não estiver configurado.
+- [ ] **TASK-06: Middlewares de Request Tracing e Tratamento Centralizado de Erros**
+    - Criar middleware de log de requisições (`src/middlewares/request-logger.middleware.ts`):
+        - Ler/gerar `x-request-id` e propagar headers W3C (`traceparent`).
+        - Registrar início, fim, latência (`duration_ms`), status code e rota.
+        - Enriquecer logs com `userId`, `role` e `academyId` de forma segura.
+    - Criar middleware centralizado de erros (`src/middlewares/error-handler.middleware.ts`):
+        - Capturar exceções 500, logar com stack trace sanitizado e marcar status de erro no span ativo.
+
+## Fase 4 - Ambiente de Validação Local e Testes Finais
+- [ ] **TASK-07: Docker Compose para Validação Local (`docker-compose.observability.yml`)**
+    - Subir containers locais de Grafana, Loki e Tempo para testes offline/homologação.
+    - Configurar datasources e derived field (Logs ↔ Traces via `traceId`).
+- [ ] **TASK-08: Testes de Validação e Critérios de Aceite**
+    - Testar inicialização com `.env` vazio (garantir boot normal e 0 falhas).
+    - Testar inicialização com `.env` apontando para Tempo e Loki.
+    - Verificar chegada de spans no Tempo e logs no Loki com correlação funcionando.
+    - Executar `npm run lint` e `npx tsc --noEmit`.
+
