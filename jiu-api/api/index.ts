@@ -1,5 +1,7 @@
+import "../src/tracing";
 import { AppDataSource } from "../src/data-source";
 import app from "../src/app";
+
 
 const PORT = 3000;
 
