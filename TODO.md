@@ -468,11 +468,11 @@ Derived from `docs/PLAN-observability-loki-tempo.md` na branch `feature/observab
     - Validar compatibilidade com build (`npm run build`).
 
 ## Fase 3 - Logging Estruturado com Pino e Grafana Loki
-- [ ] **TASK-05: Logger Estruturado com Correlação OTel (`src/utils/logger.ts`)**
+- [x] **TASK-05: Logger Estruturado com Correlação OTel (`src/utils/logger.ts`)**
     - Configurar Pino com injeção automática de `trace_id` e `span_id` a partir do span ativo do OpenTelemetry.
     - Configurar transporte assíncrono para o Loki quando `LOKI_HOST` estiver definido.
     - Configurar fallback limpo para `stdout` quando `LOKI_HOST` não estiver configurado.
-- [ ] **TASK-06: Middlewares de Request Tracing e Tratamento Centralizado de Erros**
+- [x] **TASK-06: Middlewares de Request Tracing e Tratamento Centralizado de Erros**
     - Criar middleware de log de requisições (`src/middlewares/request-logger.middleware.ts`):
         - Ler/gerar `x-request-id` e propagar headers W3C (`traceparent`).
         - Registrar início, fim, latência (`duration_ms`), status code e rota.

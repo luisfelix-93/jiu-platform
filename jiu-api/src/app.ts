@@ -15,10 +15,14 @@ import contentRoutes from "./routes/content.routes";
 import dashboardRoutes from "./routes/dashboard.routes";
 import graduationRoutes from "./routes/graduation.routes";
 import academyRoutes from "./routes/academy.routes";
+import requestLogger from "./middlewares/request-logger.middleware";
+import errorHandler from "./middlewares/error-handler.middleware";
 
 const app = express();
 
 app.set('trust proxy', 1); // trust first proxy
+
+app.use(requestLogger);
 
 const allowedOrigins = [
     "http://localhost:5173",
@@ -100,5 +104,8 @@ if (process.env.NODE_ENV !== "production") {
         }
     });
 }
+
+// Global error handling middleware with OpenTelemetry enrichment
+app.use(errorHandler);
 
 export default app;
