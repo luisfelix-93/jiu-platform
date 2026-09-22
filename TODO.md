@@ -457,13 +457,13 @@ Derived from `docs/PLAN-observability-loki-tempo.md` na branch `feature/observab
     - Garantir que a ausência dessas variáveis ative o modo fallback/no-op silencioso.
 
 ## Fase 2 - Tracing com OpenTelemetry e Grafana Tempo
-- [ ] **TASK-03: Bootstrapping do Tracing (`src/tracing.ts`)**
+- [x] **TASK-03: Bootstrapping do Tracing (`src/tracing.ts`)**
     - Criar inicializador do OpenTelemetry Node SDK.
     - Configurar auto-instrumentações (HTTP, Express, TypeORM/pg).
     - Configurar exportação OTLP HTTP para o endpoint do Grafana Tempo com suporte a **Basic Auth** (`OTEL_USER` / `OTEL_PASSWORD` ou `OTEL_EXPORTER_OTLP_HEADERS`).
     - Implementar verificação: se `OTEL_EXPORTER_OTLP_ENDPOINT` não existir ou `OTEL_ENABLED !== 'true'`, não inicializar exporters.
     - Implementar graceful shutdown (`SIGTERM`/`SIGINT`).
-- [ ] **TASK-04: Integração do Tracing no Servidor**
+- [x] **TASK-04: Integração do Tracing no Servidor**
     - Importar `./tracing` no início de `src/server.ts` e ajustar scripts de inicialização.
     - Validar compatibilidade com build (`npm run build`).
 
