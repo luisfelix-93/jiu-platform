@@ -481,12 +481,13 @@ Derived from `docs/PLAN-observability-loki-tempo.md` na branch `feature/observab
         - Capturar exceções 500, logar com stack trace sanitizado e marcar status de erro no span ativo.
 
 ## Fase 4 - Ambiente de Validação Local e Testes Finais
-- [ ] **TASK-07: Docker Compose para Validação Local (`docker-compose.observability.yml`)**
+- [x] **TASK-07: Docker Compose para Validação Local (`docker-compose.observability.yml`)**
     - Subir containers locais de Grafana, Loki e Tempo para testes offline/homologação.
     - Configurar datasources e derived field (Logs ↔ Traces via `traceId`).
-- [ ] **TASK-08: Testes de Validação e Critérios de Aceite**
+- [x] **TASK-08: Testes de Validação e Critérios de Aceite**
     - Testar inicialização com `.env` vazio (garantir boot normal e 0 falhas).
     - Testar inicialização com `.env` apontando para Tempo e Loki.
     - Verificar chegada de spans no Tempo e logs no Loki com correlação funcionando.
     - Executar `npm run lint` e `npx tsc --noEmit`.
+
 

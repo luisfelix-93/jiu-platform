@@ -1,0 +1,35 @@
+services:
+  loki:
+    image: grafana/loki:3.0.0
+    container_name: jiu-loki
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - ./docker/observability/loki.yaml:/etc/loki/local-config.yaml:ro
+    ports:
+      - "3100:3100"
+
+  tempo:
+    image: grafana/tempo:2.4.1
+    container_name: jiu-tempo
+    command: -config.file=/etc/tempo.yaml
+    volumes:
+      - ./docker/observability/tempo.yaml:/etc/tempo.yaml:ro
+    ports:
+      - "3200:3200" # tempo web/api
+      - "4317:4317" # otlp grpc
+      - "4318:4318" # otlp http
+
+  grafana:
+    image: grafana/grafana:11.0.0
+    container_name: jiu-grafana
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_AUTH_DISABLE_LOGIN_FORM=true
+    volumes:
+      - ./docker/observability/grafana/provisioning:/etc/grafana/provisioning:ro
+    ports:
+      - "3001:3000"
+    depends_on:
+      - loki
+      - tempo
