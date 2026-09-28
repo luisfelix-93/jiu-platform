@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { trace, SpanStatusCode } from "@opentelemetry/api";
 import logger from "../utils/logger";
+import { ErrorLogService } from "../services/ErrorLogService";
 
 export const errorHandler = (
     err: any,
@@ -39,6 +40,10 @@ export const errorHandler = (
     const message = statusCode === 500 && process.env.NODE_ENV === "production"
         ? "Internal Server Error"
         : err.message || "An unexpected error occurred";
+
+    // Anexa stack trace e contexto para gravação no httpErrorLogger
+    (res as any)._errStack = err?.stack;
+    (res as any)._errMessage = err?.message;
 
     res.status(statusCode).json({
         error: message,

@@ -509,18 +509,22 @@ Derived from `auth-refresh-error-logs.md`.
     - Configurar opções explícitas de SSL para sanar warning do `pg-connection-string`.
 
 ## Fase 3 - Banco de Dados & Backend: Tabela de Logs de Erros (`error_logs`)
-- [ ] **TASK-DB1: Entidade e Migration TypeORM `ErrorLog` (`src/entities/ErrorLog.ts`)**
+- [x] **TASK-DB1: Entidade e Migration TypeORM `ErrorLog` (`src/entities/ErrorLog.ts`)**
     - Criar entidade com `level`, `message`, `stack`, `statusCode`, `endpoint`, `method`, `userId`, `ip`, `userAgent`, `context`.
     - Registrar no `AppDataSource` e gerar migration.
-- [ ] **TASK-DB2: Serviço de Persistência `ErrorLogService` (`src/services/ErrorLogService.ts`)**
+- [x] **TASK-DB2: Serviço de Persistência `ErrorLogService` (`src/services/ErrorLogService.ts`)**
     - Gravação segura e não bloqueante no PostgreSQL com fallback para logger.
-- [ ] **TASK-DB3: Integração no Middleware de Erros (`src/middlewares/error-handler.middleware.ts`)**
+- [x] **TASK-DB3: Integração no Middleware de Erros (`src/middlewares/error-handler.middleware.ts`)**
     - Capturar exceções 500 não tratadas e registrar na tabela `error_logs`.
-- [ ] **TASK-DB4: Endpoint de Consulta Administrativa (`GET /api/admin/error-logs`)**
+- [x] **TASK-DB4: Endpoint de Consulta Administrativa (`GET /api/admin/error-logs`)**
     - Rota protegida com paginação e filtros para consulta de erros pelo painel.
+- [x] **TASK-DB5: Captura Global de Erros 4xx e Sanitização Automática a cada 15 dias**
+    - Middleware `httpErrorLogger` interceptando respostas `>= 400` (400, 401, 403, 404, 429, 500).
+    - Migration `1770500000000-CreateSanitizeErrorLogsJob.ts` com function `sanitize_error_logs(15)` e agendamento `pg_cron` no PostgreSQL.
+    - Sanitização automática de fallback no Node.js via `ErrorLogService.sanitize(15)`.
 
 ## Fase 4 - Validação e Testes
-- [ ] **TASK-V1: Build e Verificação de Tipos TypeScript (`jiu-api` e `jiu-app`)**
+- [x] **TASK-V1: Build e Verificação de Tipos TypeScript (`jiu-api` e `jiu-app`)**
 - [ ] **TASK-V2: Teste de Renovação Automática com Token Expirado**
 - [ ] **TASK-V3: Teste de Gravação e Consulta de Logs na Tabela `error_logs`**
 - [ ] **TASK-V4: Teste de Compatibilidade entre Navegadores (Chrome, Safari, Brave)**

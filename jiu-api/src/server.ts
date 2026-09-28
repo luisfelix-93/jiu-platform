@@ -14,6 +14,15 @@ ensureDatabaseExists().then(() => {
     AppDataSource.initialize()
         .then(() => {
             console.log("Data Source has been initialized!");
+
+            // Sanitiza logs com mais de 15 dias na inicialização e a cada 24 horas
+            import("./services/ErrorLogService").then(({ ErrorLogService }) => {
+                ErrorLogService.sanitize(15).catch(() => {});
+                setInterval(() => {
+                    ErrorLogService.sanitize(15).catch(() => {});
+                }, 24 * 60 * 60 * 1000);
+            });
+
             app.listen(PORT, () => {
                 console.log(`Server is running on port ${PORT}`);
             });

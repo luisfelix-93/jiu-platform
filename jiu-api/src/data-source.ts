@@ -13,6 +13,7 @@ import { Profile } from "./entities/Profile";
 import { RefreshToken } from "./entities/RefreshToken";
 import { ScheduledLesson } from "./entities/ScheduledLesson";
 import { StudentProgress } from "./entities/StudentProgress";
+import { ErrorLog } from "./entities/ErrorLog";
 
 import * as path from "path";
 
@@ -72,7 +73,8 @@ export const AppDataSource = new DataSource({
         Profile,
         RefreshToken,
         ScheduledLesson,
-        StudentProgress
+        StudentProgress,
+        ErrorLog
     ],
     migrations: [path.join(__dirname, "migrations", "*.{ts,js}")],
     subscribers: [],
