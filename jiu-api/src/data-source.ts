@@ -23,9 +23,19 @@ const databaseUrl = process.env.DATABASE_URL;
 const useSSL = isProd || !!databaseUrl;
 const sslConfig = useSSL ? { rejectUnauthorized: false } : false;
 
-const baseConfig = databaseUrl
+let formattedDatabaseUrl = databaseUrl;
+if (formattedDatabaseUrl) {
+    if (formattedDatabaseUrl.includes("sslmode=require")) {
+        formattedDatabaseUrl = formattedDatabaseUrl.replace("sslmode=require", "sslmode=verify-full");
+    } else if (useSSL && !formattedDatabaseUrl.includes("sslmode=")) {
+        const separator = formattedDatabaseUrl.includes("?") ? "&" : "?";
+        formattedDatabaseUrl = `${formattedDatabaseUrl}${separator}sslmode=verify-full`;
+    }
+}
+
+const baseConfig = formattedDatabaseUrl
     ? {
-          url: databaseUrl,
+          url: formattedDatabaseUrl,
       }
     : {
           host: process.env.DB_HOST || "localhost",

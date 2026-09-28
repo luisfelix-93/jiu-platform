@@ -503,9 +503,9 @@ Derived from `auth-refresh-error-logs.md`.
     - Exibir estado de carregamento e feedback visual claro de erro em vez de tela travada.
 
 ## Fase 2 - Backend (`jiu-api`): Cookies e Warnings de Conexão
-- [ ] **TASK-B1: Ajuste de Política de Cookies para `SameSite: "lax"` (`AuthController.ts`)**
+- [x] **TASK-B1: Ajuste de Política de Cookies para `SameSite: "lax"` (`AuthController.ts`)**
     - Adequar `setAuthCookies` para `sameSite: "lax"`, compatibilizando com Safari (iOS), Chrome e Brave.
-- [ ] **TASK-B2: Resolução do Alerta de SSL do PostgreSQL (`data-source.ts`)**
+- [x] **TASK-B2: Resolução do Alerta de SSL do PostgreSQL (`data-source.ts`)**
     - Configurar opções explícitas de SSL para sanar warning do `pg-connection-string`.
 
 ## Fase 3 - Banco de Dados & Backend: Tabela de Logs de Erros (`error_logs`)

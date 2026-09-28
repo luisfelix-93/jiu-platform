@@ -59,16 +59,32 @@ export class AuthController {
 
         res.cookie("accessToken", accessToken, {
             httpOnly: true,
-            secure: isProd, // Required for SameSite=None
-            sameSite: isProd ? "none" : "lax", // Strict blocks redirects sometimes, Lax is good default for dev
+            secure: isProd,
+            sameSite: "lax",
             maxAge: 15 * 60 * 1000 // 15m
         });
         res.cookie("refreshToken", refreshToken, {
             httpOnly: true,
-            secure: isProd, // Required for SameSite=None
-            sameSite: isProd ? "none" : "lax", // Strict blocks redirects sometimes, Lax is good default for dev
+            secure: isProd,
+            sameSite: "lax",
             maxAge: 7 * 24 * 60 * 60 * 1000 // 7d
         });
+    }
+
+    static async logout(req: Request, res: Response) {
+        const isProd = process.env.NODE_ENV === "production";
+
+        res.clearCookie("accessToken", {
+            httpOnly: true,
+            secure: isProd,
+            sameSite: "lax"
+        });
+        res.clearCookie("refreshToken", {
+            httpOnly: true,
+            secure: isProd,
+            sameSite: "lax"
+        });
+        res.json({ message: "Logged out successfully" });
     }
 
     static async forgotPassword(req: Request, res: Response) {
