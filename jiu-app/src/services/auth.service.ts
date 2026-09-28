@@ -25,6 +25,11 @@ export const AuthService = {
         // await api.post("/auth/logout");
     },
 
+    async refreshToken(): Promise<AuthResponse> {
+        const { data } = await api.post("/auth/refresh");
+        return data;
+    },
+
     async updateProfile(data: Partial<User>): Promise<User> {
         const { data: updatedUser } = await api.put("/users/me", data);
         return updatedUser;

@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Ca
 import { Button } from '../../components/ui/Button';
 import { Modal } from '../../components/ui/Modal';
 import { Calendar, CheckCircle2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { useAuthStore } from '../../stores/useAuthStore';
 import { DashboardService, type DashboardData } from '../../services/dashboard.service';
 import { LessonService } from '../../services/lesson.service';
@@ -58,6 +59,7 @@ export const StudentHome = () => {
             }
         } catch (error) {
             console.error("Failed to fetch details", error);
+            toast.error("Não foi possível carregar os detalhes da aula.");
         } finally {
             setIsLoadingAttendance(false);
         }
@@ -69,22 +71,29 @@ export const StudentHome = () => {
         try {
             await LessonService.checkIn(selectedLesson.id);
             setAttendanceStatus({ checkedIn: true, status: 'present' });
-            alert("Presença confirmada com sucesso!");
+            toast.success("Presença confirmada com sucesso!");
 
             // Refresh stats if needed
             const result = await DashboardService.getStudentData();
             setData(result);
-        } catch (error) {
-            console.error(error);
-            alert("Erro ao confirmar presença.");
+        } catch (error: any) {
+            console.error("Check-in error:", error);
+            const errorMsg = error?.response?.data?.error || "Erro ao confirmar presença. Tente novamente.";
+            toast.error(errorMsg);
         } finally {
             setIsLoadingAttendance(false);
         }
     };
 
     const canCheckIn = selectedLesson && (() => {
-        const lessonDate = new Date(`${selectedLesson.date.split('T')[0]}T${selectedLesson.startTime}`);
-        return isToday(lessonDate) || isAfter(lessonDate, new Date());
+        try {
+            const rawDate = selectedLesson.date?.split('T')[0] || selectedLesson.date;
+            const lessonDate = new Date(`${rawDate}T${selectedLesson.startTime || '00:00'}`);
+            if (isNaN(lessonDate.getTime())) return false;
+            return isToday(lessonDate) || isAfter(lessonDate, new Date());
+        } catch {
+            return false;
+        }
     })();
 
     if (isLoading) {
