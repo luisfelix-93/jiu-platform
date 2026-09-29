@@ -525,9 +525,9 @@ Derived from `auth-refresh-error-logs.md`.
 
 ## Fase 4 - Validação e Testes
 - [x] **TASK-V1: Build e Verificação de Tipos TypeScript (`jiu-api` e `jiu-app`)**
-- [ ] **TASK-V2: Teste de Renovação Automática com Token Expirado**
-- [ ] **TASK-V3: Teste de Gravação e Consulta de Logs na Tabela `error_logs`**
-- [ ] **TASK-V4: Teste de Compatibilidade entre Navegadores (Chrome, Safari, Brave)**
+- [x] **TASK-V2: Teste de Renovação Automática com Token Expirado**
+- [x] **TASK-V3: Teste de Gravação e Consulta de Logs na Tabela `error_logs`**
+- [x] **TASK-V4: Teste de Compatibilidade entre Navegadores (Chrome, Safari, Brave)**
 
 
 
