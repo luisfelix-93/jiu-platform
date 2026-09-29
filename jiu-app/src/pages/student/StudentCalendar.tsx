@@ -9,6 +9,7 @@ import { Button } from '../../components/ui/Button';
 import { LessonService } from '../../services/lesson.service';
 import { ContentService } from '../../services/content.service';
 import { CheckCircle2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { VideoPlayer } from '../../components/VideoPlayer';
 
 const locales = {
@@ -89,6 +90,7 @@ export const StudentCalendar = () => {
             }
         } catch (error) {
             console.error("Failed to fetch details", error);
+            toast.error("Não foi possível carregar os detalhes da aula.");
         } finally {
             setIsLoadingAttendance(false);
         }
@@ -100,10 +102,11 @@ export const StudentCalendar = () => {
         try {
             await LessonService.checkIn(selectedEvent.id);
             setAttendanceStatus({ checkedIn: true, status: 'present' });
-            alert("Presença confirmada com sucesso!");
-        } catch (error) {
-            console.error(error);
-            alert("Erro ao confirmar presença.");
+            toast.success("Presença confirmada com sucesso!");
+        } catch (error: any) {
+            console.error("Check-in error:", error);
+            const errorMsg = error?.response?.data?.error || "Erro ao confirmar presença. Tente novamente.";
+            toast.error(errorMsg);
         } finally {
             setIsLoadingAttendance(false);
         }

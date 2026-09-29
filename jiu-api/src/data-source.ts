@@ -13,6 +13,7 @@ import { Profile } from "./entities/Profile";
 import { RefreshToken } from "./entities/RefreshToken";
 import { ScheduledLesson } from "./entities/ScheduledLesson";
 import { StudentProgress } from "./entities/StudentProgress";
+import { ErrorLog } from "./entities/ErrorLog";
 
 import * as path from "path";
 
@@ -23,9 +24,19 @@ const databaseUrl = process.env.DATABASE_URL;
 const useSSL = isProd || !!databaseUrl;
 const sslConfig = useSSL ? { rejectUnauthorized: false } : false;
 
-const baseConfig = databaseUrl
+let formattedDatabaseUrl = databaseUrl;
+if (formattedDatabaseUrl) {
+    if (formattedDatabaseUrl.includes("sslmode=require")) {
+        formattedDatabaseUrl = formattedDatabaseUrl.replace("sslmode=require", "sslmode=verify-full");
+    } else if (useSSL && !formattedDatabaseUrl.includes("sslmode=")) {
+        const separator = formattedDatabaseUrl.includes("?") ? "&" : "?";
+        formattedDatabaseUrl = `${formattedDatabaseUrl}${separator}sslmode=verify-full`;
+    }
+}
+
+const baseConfig = formattedDatabaseUrl
     ? {
-          url: databaseUrl,
+          url: formattedDatabaseUrl,
       }
     : {
           host: process.env.DB_HOST || "localhost",
@@ -62,7 +73,8 @@ export const AppDataSource = new DataSource({
         Profile,
         RefreshToken,
         ScheduledLesson,
-        StudentProgress
+        StudentProgress,
+        ErrorLog
     ],
     migrations: [path.join(__dirname, "migrations", "*.{ts,js}")],
     subscribers: [],

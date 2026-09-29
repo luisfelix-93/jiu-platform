@@ -8,6 +8,7 @@ import { Check, X, Clock, Calendar } from 'lucide-react';
 import { format, addMinutes, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { translateBelt } from '../../utils/belt';
+import { toast } from 'sonner';
 
 export const ProfessorAttendance = () => {
     const [lessons, setLessons] = useState<Lesson[]>([]);
@@ -79,9 +80,10 @@ export const ProfessorAttendance = () => {
             });
             // Refresh list
             fetchAttendance(selectedLesson.id);
-        } catch (error) {
+        } catch (error: any) {
             console.error("Failed to mark attendance", error);
-            alert("Erro ao registrar presença");
+            const msg = error?.response?.data?.error || "Erro ao registrar presença";
+            toast.error(msg);
         }
     };
 

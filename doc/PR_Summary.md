@@ -1,51 +1,134 @@
-# Resumo da Implementação: Sistema de Graduação e Ajustes de Frequência
+# PR: fix(auth): Resiliência de Autenticação, Renovação Silenciosa de Sessão e Tabela de Logs de Erros
 
-Este documento detalha o conjunto de implementações realizadas para robustecer o módulo de graduação e a contagem de presenças na plataforma. As alterações englobam tanto ajustes manuais no saldo de aulas quanto a correção do ciclo de graduação (reset do contador após promoção de faixa/grau).
+## 📋 Resumo Executivo
 
-## 🎯 Objetivos
-1. **Zerar Aulas na Graduação:** Garantir que o contador de aulas do aluno seja automaticamente reiniciado ao ser promovido, contando apenas aulas realizadas no novo grau/faixa.
-2. **Edição da Data de Graduação:** Permitir que o professor corrija manualmente a data de promoções passadas (para ajustar o contador retroativamente).
-3. **Ajuste Manual de Aulas:** Dar flexibilidade para adicionar ou remover créditos de aulas diretamente sem depender do calendário, respeitando o histórico real e o ciclo de graduação atual.
+Este Pull Request soluciona de forma definitiva o problema crítico em que alunos e professores ficavam com a tela/modal travados ao tentar confirmar presença ou interagir com o sistema após um período de inatividade, além de falhas intermitentes em navegadores restritivos (Safari no iOS/macOS e Brave).
 
----
-
-## 🛠️ Alterações Técnicas
-
-### 1. Banco de Dados (jiu-api)
-- **Entidade `User`**:
-    - Adicionado o campo `lastGraduationDate` (tipo `timestamp`, *nullable*) para delimitar o início do ciclo atual de contagem de aulas.
-- **Entidade `Attendance`**:
-    - O campo `lesson_id` agora aceita valores nulos (`nullable: true`) para suportar créditos manuais órfãos.
-    - Adicionada a flag `is_manual_credit` (boolean) para diferenciar check-ins físicos de créditos compensatórios.
-    - Removida a trava de exclusividade (unique constraint) `lesson_id` vs `user_id` para permitir múltiplos créditos manuais.
-- **Migrations**: 
-    - `AddManualAttendanceCredit`: Configuração do suporte a aulas manuais.
-    - `AddLastGraduationDate`: Criação da coluna de referência temporal de promoção na tabela de usuários.
-
-### 2. Backend (jiu-api)
-- **`UserService.ts`**:
-    - **Promoção (`promoteStudent`)**: Modificado para registrar a `lastGraduationDate` do usuário sempre para o final do dia da promoção (`23:59:59.999` local). Isso assegura que aulas assistidas *no dia da graduação* não transbordem para o novo contador.
-    - **Listagem de Alunos (`listStudentsWithGraduationInfo`)**: A subquery de contagem de presença via `loadRelationCountAndMap` passou a usar um `innerJoin` em `user` para aplicar a condição de filtro `"attendance"."created_at" > COALESCE("userAlias"."last_graduation_date", '1970-01-01')`. Apenas aulas estritamente posteriores à última graduação entram no cálculo matemático do total.
-    - **Edição de Data (`updateGraduationDate`)**: Novo método de serviço focado na edição limpa da data.
-    - **Ajuste de Aulas (`adjustAttendanceCount`)**: Atualizado para buscar apenas créditos dentro do limite da `lastGraduationDate`, impossibilitando a deleção acidental de presenças de graus anteriores ao remover créditos manualmente.
-- **Controllers & Rotas**:
-    - `POST /students/:id/adjust-attendance`: Endpoint de crédito manual validado via Zod.
-    - `PATCH /students/:id/graduation-date`: Endpoint de manipulação livre da data de graduação.
-
-### 3. Frontend (jiu-app)
-- **Página de Graduação (`Graduation.tsx`)**:
-    - **Edição de Aulas:** A coluna "Aulas Concluídas" virou editável inline de forma transacional, acionada por um clique simples.
-    - **Data da Última Graduação:** Criada a coluna "Última Graduação". O professor pode clicar sobre ela e utilizar um modal *inline* nativo (`<input type="date">`) para redatar a promoção.
-    - **Gestão de Timezone:** Para evitar os bugs clássicos de D-1 (data retroceder 1 dia devido ao uso de datas zeradas no fuso UTC), o front agora intercepta a string `YYYY-MM-DD`, fabrica o objeto date usando propriedades extraídas localmente e injeta os milissegundos para forçar `23:59:59.999`.
+Além da correção de autenticação e UX, foi implementado um **módulo completo de auditoria e registro de erros em banco de dados (`error_logs`)**, com captura automática de falhas de cliente (4xx) e servidor (500), rotas administrativas de monitoramento e uma política de **sanitização automática a cada 15 dias** (via PostgreSQL `pg_cron` com fallback no Node.js) para evitar consumo excessivo de armazenamento.
 
 ---
 
-## 📋 Regras de Negócio e Casos de Uso Contemplados
+## 🔍 Contexto do Problema & Causa Raiz
 
-1. **A Aula da Graduação não conta:** Se o aluno fez check-in as 19:00 e foi promovido às 20:00 (ou vice e versa no mesmo dia), a aula de 19:00 **não** será contabilizada no novo grau. O contador dele começará limpo na aula do dia seguinte.
-2. **Correção Retroativa Instantânea:** Ao atualizar manualmente a data da "Última Graduação" de um aluno legado, o backend imediatamente exclui do somatório as aulas anteriores à nova data, fazendo o medidor e a régua de progresso saltarem para os valores corretos em tempo real sem qualquer sincronização extra.
-3. **Auditoria Cega para Aulas:** É proibido deletar presenças vindas de aplicativo (o sistema restringe a subtração na edição manual apenas para remover "créditos" fantasmas).
-4. **Resiliência PostgresSQL:** Todos os TypeORM raw-queries foram sanitizados contra nomes de tabela reservados do banco (`"user"`).
+1. **Expiração do Access Token (15 min) sem Silent Refresh:**
+   - O `accessToken` possui tempo de vida de 15 minutos. Quando expirava, qualquer requisição de confirmação de presença (`/api/attendance/check-in`) retornava status `401 Unauthorized`.
+   - Como o cliente Axios (`jiu-app/src/lib/api.ts`) não possuía interceptor de renovação, a chamada falhava silenciosamente ou caía em `alert()` nativo do navegador, bloqueando a thread de renderização e congelando o modal aberto.
+
+2. **Bloqueio de Cookies no Safari/Brave (`SameSite=None` vs `SameSite=Lax`):**
+   - O cookie de autenticação estava emitido com `sameSite: "none"`. Navegadores com proteção avançada contra rastreamento (ITP do Safari e Shields do Brave) descartavam ou bloqueavam esses cookies quando a aplicação frontend e API trafegavam sob domínios/subdomínios ou proxies do Vercel, impedindo o envio do `refreshToken`.
+
+3. **Inexistência de Tabela de Histórico de Erros no Banco de Dados:**
+   - Erros de requisição e exceções 500 eram apenas emitidos em logs efêmeros do container, dificultando o diagnóstico rápido pelo suporte ou administrador da plataforma.
 
 ---
-**Status Final:** ✅ Funcionalidades implementadas, validadas e prontas.
+
+## 🎯 Principais Entregas
+
+### 1. Frontend: Silent Refresh Transparente & UX Não-Bloqueante
+- **Interceptor de Resposta no Axios (`jiu-app/src/lib/api.ts`):**
+  - Intercepta automaticamente erros `401 Unauthorized`.
+  - Implementação do padrão **Failed Request Queue**: Se múltiplas requisições simultâneas falharem com 401, apenas uma chamada é feita a `/api/auth/refresh`; as demais requisições ficam enfileiradas e são reenviadas automaticamente com o novo token assim que a renovação for concluída.
+  - Se o `refreshToken` estiver inválido ou expirado, limpa a sessão e redireciona graciosamente para o `/login`.
+- **Eliminação de Modais Congelados & Toasts Amigáveis:**
+  - Substituição de chamadas bloqueantes `window.alert()` por notificações modernas e assíncronas do **Sonner** (`toast.error()`, `toast.success()`) em `StudentHome.tsx`, `StudentCalendar.tsx` e `ProfessorAttendance.tsx`.
+  - Tratamento defensivo de datas e estados de loading nos modais de presença.
+
+### 2. Backend: Cookies Seguros, Logout e Conexão SSL
+- **Política de Cookies `SameSite: "lax"`:**
+  - Atualizado em `AuthController.ts` para garantir compatibilidade universal entre Chrome, Safari, Firefox, Edge e Brave.
+- **Endpoint de Encerramento de Sessão (`POST /api/auth/logout`):**
+  - Revoga os cookies `accessToken` e `refreshToken` definindo `maxAge: 0` e expirando-os explicitamente.
+- **Resolução de Warning SSL no PostgreSQL:**
+  - Em `jiu-api/src/data-source.ts`, inclusão explícita de `sslmode=verify-full` na URL de conexão do PostgreSQL, eliminando o alerta de depreciação do driver `pg-connection-string`.
+
+### 3. Banco de Dados: Entidade `ErrorLog` & Migrations
+- **Entidade `ErrorLog` (`jiu-api/src/entities/ErrorLog.ts`):**
+  - Tabela `error_logs` persistindo: `id` (UUID), `level` (`error` | `warn`), `message`, `stack` (text), `statusCode`, `endpoint`, `method`, `userId`, `userEmail`, `ip`, `userAgent`, `context` (JSONB) e `createdAt`.
+  - Índices B-Tree otimizados em `statusCode`, `endpoint`, `userId` e `createdAt` para garantir consultas administrativas ultra-rápidas.
+- **Migration TypeORM (`1770400000000-CreateErrorLogsTable.ts`):**
+  - Criação da tabela e índices de forma versionada e segura.
+
+### 4. Observabilidade: Captura Global de Erros 4xx e 5xx
+- **Middleware `httpErrorLogger` (`jiu-api/src/middlewares/http-error-logger.middleware.ts`):**
+  - Intercepta respostas com status `>= 400` antes de serem enviadas ao cliente.
+  - Classifica respostas `4xx` como `warn` (validações, 401, 403, 404, 429) e `5xx` como `error`.
+  - Gravação assíncrona desacoplada (`setImmediate`), garantindo que o tempo de resposta da API do usuário final não sofra impacto de latência.
+- **Integração no `error-handler.middleware.ts`:**
+  - Erros não tratados (exceções 500) anexam o stack trace completo e mensagem detalhada ao contexto do log de erro.
+
+### 5. Política de Sanitização Automática a cada 15 Dias
+- **Migration PostgreSQL (`1770500000000-CreateSanitizeErrorLogsJob.ts`):**
+  - Criação da Stored Procedure `sanitize_error_logs(retention_days INT)`.
+  - Configuração do agendamento nativo via extensão `pg_cron` (`0 3 * * *` - diariamente às 03:00 UTC).
+- **Fallback Automático no Node.js (`server.ts`):**
+  - Execução de `ErrorLogService.sanitize(15)` durante o boot da API e agendamento de intervalo recorrente a cada 24 horas.
+  - Garante que a sanitização funcione mesmo em instâncias do PostgreSQL que não possuam a extensão `pg_cron` habilitada.
+
+### 6. Gestão Administrativa de Logs
+- **Endpoints protegidos (`UserRole.ADMIN`):**
+  - `GET /api/admin/error-logs`: Listagem paginada com filtros por `statusCode`, `level`, `endpoint`, `startDate` e `endDate`.
+  - `GET /api/admin/error-logs/:id`: Detalhamento completo do log com stack trace e metadados contextuais.
+  - `DELETE /api/admin/error-logs`: Limpeza manual baseada em retenção de dias (`days=15`).
+  - `POST /api/admin/error-logs/sanitize`: Trigger manual de sanitização com execução de `VACUUM ANALYZE error_logs`.
+
+---
+
+## 🛠️ Matriz de Arquivos Modificados e Criados
+
+### Frontend (`jiu-app`)
+
+| Arquivo | Ação | Descrição |
+|---|---|---|
+| `src/lib/api.ts` | **Modificado** | Interceptor de resposta Axios com fila de espera (`failedQueue`) para renovação silenciosa transparente e redirecionamento seguro em caso de falha definitiva. |
+| `src/services/auth.service.ts` | **Modificado** | Adição do método explícito `refreshToken()` consumindo `/api/auth/refresh`. |
+| `src/pages/student/StudentHome.tsx` | **Modificado** | Substituição de `alert()` por Sonner `toast`, melhoria no fluxo de confirmação e prevenção de travamento de modal. |
+| `src/pages/student/StudentCalendar.tsx` | **Modificado** | Tratamento resiliente de presença no calendário com Sonner toasts e tratamento de exceção. |
+| `src/pages/professor/ProfessorAttendance.tsx` | **Modificado** | Tratamento assíncrono não-bloqueante na tela de chamada do professor. |
+
+### Backend (`jiu-api`)
+
+| Arquivo | Ação | Descrição |
+|---|---|---|
+| `src/entities/ErrorLog.ts` | **Criado** | Entidade TypeORM para persistência estruturada de logs com índices de performance. |
+| `src/migrations/1770400000000-CreateErrorLogsTable.ts` | **Criado** | Migration DDL para tabela `error_logs` e índices. |
+| `src/migrations/1770500000000-CreateSanitizeErrorLogsJob.ts` | **Criado** | Stored procedure `sanitize_error_logs` e agendamento nativo `pg_cron`. |
+| `src/services/ErrorLogService.ts` | **Criado** | Regras de negócio para escrita não-bloqueante, consulta paginada, filtros e sanitização (via procedure ou TypeORM fallback). |
+| `src/controllers/ErrorLogController.ts` | **Criado** | Controller administrativo para operações sobre os logs de erro. |
+| `src/routes/admin.routes.ts` | **Modificado** | Registro das rotas administrativas de logs sob middleware de autenticação e perfil `ADMIN`. |
+| `src/middlewares/http-error-logger.middleware.ts` | **Criado** | Interceptador de respostas `>= 400` para gravação assíncrona de 4xx (`warn`) e 5xx (`error`). |
+| `src/middlewares/error-handler.middleware.ts` | **Modificado** | Propagação de stack trace e mensagem interna para enriquecimento do log. |
+| `src/controllers/AuthController.ts` | **Modificado** | Atualização de cookies para `SameSite: "lax"` e implementação de `logout`. |
+| `src/routes/auth.routes.ts` | **Modificado** | Registro da rota `POST /api/auth/logout`. |
+| `src/data-source.ts` | **Modificado** | Sanitização da URL de conexão com `sslmode=verify-full` e registro da entidade `ErrorLog`. |
+| `src/server.ts` | **Modificado** | Chamada de inicialização da sanitização de logs de erro e agendamento de fallback de 24h. |
+| `src/tracing.ts` | **Modificado** | Tipagem defensiva `err: unknown` no catch do shutdown do OpenTelemetry. |
+| `src/app.ts` | **Modificado** | Acoplamento do `httpErrorLogger` na cadeia de middlewares do Express. |
+
+---
+
+## 🧪 Validação da Fase 4 & Garantia de Qualidade
+
+1. **Compilação e Tipagem (TypeScript):**
+   - `jiu-api`: `npm run build` executado com **0 erros**.
+   - `jiu-app`: `npm run build` executado com **0 erros** (Vite + `tsc -b`).
+2. **Script Automatizado de Validação (`validate-phase4.ts`):**
+   - Teste 1: Métodos do `ErrorLogService` validados com sucesso (`logError`, `listLogs`, `getLogById`, `clearOldLogs`, `sanitize`).
+   - Teste 2: Instanciação e schema da entidade `ErrorLog` validados.
+   - Teste 3: Middleware `httpErrorLogger` interceptou e tratou respostas de erro HTTP sem efeitos colaterais no payload do cliente.
+   - Teste 4: Registro da entidade `ErrorLog` validado no `AppDataSource`.
+3. **Resiliência Multi-Dispositivo:**
+   - Cookies emitidos com `SameSite="Lax"` eliminam os descartes silenciosos em navegadores baseados em WebKit (iOS Safari) e Brave Shield.
+   - O interceptor com fila de promessas garante que nenhuma sessão válida seja desconectada por concorrência de requisições.
+
+---
+
+## 🚀 Instruções de Implantação
+
+1. **Executar Migrations no Banco de Dados:**
+   ```bash
+   cd jiu-api
+   npm run typeorm migration:run -- -d src/data-source.ts
+   ```
+2. **Reiniciar os Serviços:**
+   - A API iniciará automaticamente o agendamento de sanitização para 15 dias.
+   - O Frontend passará a renovar tokens silenciosamente e a exibir notificações não bloqueantes.

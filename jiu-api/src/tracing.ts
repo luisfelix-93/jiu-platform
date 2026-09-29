@@ -77,7 +77,7 @@ if (isOtelEnabled && otlpEndpoint) {
         if (sdk) {
             sdk.shutdown()
                 .then(() => console.log("[OpenTelemetry] SDK terminated gracefully"))
-                .catch((err) => console.error("[OpenTelemetry] Error terminating SDK:", err));
+                .catch((err: any) => console.error("[OpenTelemetry] Error terminating SDK:", err));
         }
     };
 

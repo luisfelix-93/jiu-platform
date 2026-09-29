@@ -15,7 +15,9 @@ import contentRoutes from "./routes/content.routes";
 import dashboardRoutes from "./routes/dashboard.routes";
 import graduationRoutes from "./routes/graduation.routes";
 import academyRoutes from "./routes/academy.routes";
+import adminRoutes from "./routes/admin.routes";
 import requestLogger from "./middlewares/request-logger.middleware";
+import httpErrorLogger from "./middlewares/http-error-logger.middleware";
 import errorHandler from "./middlewares/error-handler.middleware";
 
 const app = express();
@@ -23,6 +25,7 @@ const app = express();
 app.set('trust proxy', 1); // trust first proxy
 
 app.use(requestLogger);
+app.use(httpErrorLogger);
 
 const allowedOrigins = [
     "http://localhost:5173",
@@ -75,6 +78,7 @@ app.use("/api/attendance", attendanceRoutes);
 app.use("/api/content", contentRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/graduation", graduationRoutes);
+app.use("/api/admin", adminRoutes);
 
 app.get("/health", (req, res) => {
     res.json({
