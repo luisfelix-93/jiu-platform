@@ -529,5 +529,31 @@ Derived from `auth-refresh-error-logs.md`.
 - [x] **TASK-V3: Teste de Gravação e Consulta de Logs na Tabela `error_logs`**
 - [x] **TASK-V4: Teste de Compatibilidade entre Navegadores (Chrome, Safari, Brave)**
 
+# Correção de Null em Estatísticas de Presença - Attendance Stats (To Do)
+
+Derived from `docs/PLAN-attendance-stats-fix.md`.
+
+## Fase 1 - Backend (`jiu-api`): Resiliência e Fallback Seguro em `AttendanceService`
+- [x] **TASK-AS1: Extração Resiliente de Datas e Ordenação Cronológica (`AttendanceService.ts`)**
+    - Sub-fase 1.1: Implementar helper para extração segura de data (`a.lesson?.date ?? a.checkInTime ?? a.createdAt`).
+    - Sub-fase 1.2: Ajustar ordenação da query para ordenar por `createdAt: "DESC"` ou `checkInTime: "DESC"` evitando discrepâncias quando `lesson` for nulo.
+    - Sub-fase 1.3: Atualizar cálculo de sequência (`streak`) e buckets mensais (`monthlyAttendance`) para consumir a data resiliente sem lançar exceções.
+- [x] **TASK-AS2: Fallback Amigável para Última Aula (`lastClass`)**
+    - Sub-fase 2.1: Proteger acesso a `lesson.class.name` com encadeamento opcional (`?.`).
+    - Sub-fase 2.2: Definir rótulo amigável caso seja crédito manual (`"Crédito Manual"`) ou aula avulsa (`"Aula Avulsa"`).
+
+## Fase 2 - Validação e Testes de Regressão
+- [ ] **TASK-TEST1: Script de Validação com Simulação de Créditos Manuais (`scripts/test-attendance-stats-null.ts`)**
+    - Sub-fase 3.1: Criar cenário de teste para aluno com 100% de créditos manuais (`lessonId: null`, `isManualCredit: true`).
+    - Sub-fase 3.2: Criar cenário com presenças mistas (aulas regulares + créditos manuais).
+    - Sub-fase 3.3: Criar cenário para aluno sem nenhuma presença (verificar retorno de `streak: 0`, `lastClass: null`).
+    - Sub-fase 3.4: Executar o script e validar payload do endpoint `GET /api/attendance/me/stats`.
+
+## Fase 3 - Verificação e Build
+- [ ] **TASK-VERIFY: Build, TypeCheck e Checklist Final**
+    - Sub-fase 4.1: Executar `npx tsc --noEmit` em `jiu-api` garantindo zero erros de tipagem.
+    - Sub-fase 4.2: Executar `npm run build` em `jiu-api`.
+    - Sub-fase 4.3: Validar que os campos retornados atendem à interface esperada pelo frontend (`jiu-app`).
+
 
 

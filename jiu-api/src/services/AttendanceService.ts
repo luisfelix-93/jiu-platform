@@ -98,16 +98,43 @@ export class AttendanceService {
         });
     }
 
+    private static getEffectiveAttendanceDate(attendance: Attendance): Date {
+        if (attendance.lesson?.date) {
+            const d = new Date(attendance.lesson.date);
+            if (!isNaN(d.getTime())) {
+                return d;
+            }
+        }
+        if (attendance.checkInTime) {
+            const d = new Date(attendance.checkInTime);
+            if (!isNaN(d.getTime())) {
+                return d;
+            }
+        }
+        if (attendance.createdAt) {
+            const d = new Date(attendance.createdAt);
+            if (!isNaN(d.getTime())) {
+                return d;
+            }
+        }
+        return new Date();
+    }
+
     static async getUserAttendanceStats(userId: string) {
-        // Fetch attendances sorted by date descending for easier processing
+        // Fetch attendances sorted by createdAt descending as baseline
         const attendances = await attendanceRepository.find({
             where: { userId, status: 'present' },
             relations: ["lesson", "lesson.class"],
             order: {
-                lesson: {
-                    date: "DESC"
-                }
+                createdAt: "DESC"
             }
+        });
+
+        // Refine sorting in memory by effective attendance date descending
+        attendances.sort((a, b) => {
+            const dateA = AttendanceService.getEffectiveAttendanceDate(a).getTime();
+            const dateB = AttendanceService.getEffectiveAttendanceDate(b).getTime();
+            return dateB - dateA;
         });
 
         // 1. Total Classes
@@ -119,17 +146,23 @@ export class AttendanceService {
             const today = new Date();
             today.setHours(0, 0, 0, 0);
 
-            // Get unique dates of attendance
-            const uniqueDates = Array.from(new Set(attendances.map(a => new Date(a.lesson.date).toDateString())));
+            // Get unique dates of attendance using effective date
+            const uniqueDates = Array.from(
+                new Set(attendances.map(a => AttendanceService.getEffectiveAttendanceDate(a).toDateString()))
+            );
 
             // Check if user attended today or yesterday to start streak counting
             // Convert strings back to dates for comparison
-            const sortedUniqueDates = uniqueDates.map(d => new Date(d)).sort((a, b) => b.getTime() - a.getTime());
+            const sortedUniqueDates = uniqueDates.map(d => {
+                const date = new Date(d);
+                date.setHours(0, 0, 0, 0);
+                return date;
+            }).sort((a, b) => b.getTime() - a.getTime());
 
             if (sortedUniqueDates.length > 0) {
                 const firstDate = sortedUniqueDates[0];
                 const diffTime = Math.abs(today.getTime() - firstDate.getTime());
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
 
                 // If last attendance was today (0) or yesterday (1), streak is alive
                 if (diffDays <= 1) {
@@ -152,11 +185,26 @@ export class AttendanceService {
             }
         }
 
-        // 3. Last Class
-        const lastClass = attendances.length > 0 ? {
-            date: attendances[0].lesson.date,
-            className: attendances[0].lesson.class.name
-        } : null;
+        // 3. Last Class with null safety and friendly fallback labels
+        let lastClass: { date: string; className: string } | null = null;
+        if (attendances.length > 0) {
+            const first = attendances[0];
+            const dateStr = first.lesson?.date 
+                ? (typeof first.lesson.date === 'string' ? first.lesson.date : new Date(first.lesson.date).toISOString())
+                : AttendanceService.getEffectiveAttendanceDate(first).toISOString();
+
+            let className = "Aula Avulsa";
+            if (first.lesson?.class?.name) {
+                className = first.lesson.class.name;
+            } else if (first.isManualCredit) {
+                className = "Crédito Manual";
+            }
+
+            lastClass = {
+                date: dateStr,
+                className
+            };
+        }
 
         // 4. Monthly Attendance (Last 6 months)
         const monthlyAttendance: { month: string; count: number }[] = [];
@@ -174,18 +222,10 @@ export class AttendanceService {
         }
 
         attendances.forEach(a => {
-            const d = new Date(a.lesson.date);
-            // Only count if within relevant range? For now, count all matching keys for simplicity 
-            // but effectively we want to fill the specific buckets.
+            const d = AttendanceService.getEffectiveAttendanceDate(a);
             const key = d.toLocaleString('pt-BR', { month: 'long' });
             if (monthMap.has(key)) {
-                // Determine if this attendance is from the current year/recent context
-                // This simple logic might aggregate multiple years (e.g. Jan 2024 and Jan 2025). 
-                // Better to use YYYY-MM key then format.
-
-                // Let's refine: Use ISO YYYY-MM check
                 const matchIndex = monthlyAttendance.findIndex(m => m.month === key);
-                // Simple heuristic: if the attendance date is within the last ~180 days
                 const now = new Date();
                 const diffTime = Math.abs(now.getTime() - d.getTime());
                 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));

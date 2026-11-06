@@ -58,9 +58,11 @@ jiu-api/src/scripts
 *.log 
 
 issues/
-.agents/
+.agent/
 roadmap.md
 
 PLAN-*.md
 PLAN-*.md
 *PLAN-*.md
+
+support/
