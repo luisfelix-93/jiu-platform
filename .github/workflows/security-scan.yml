@@ -1,0 +1,206 @@
+name: Security Vulnerability Scan
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+  security-events: write
+
+jobs:
+  audit-api:
+    name: Dependency Audit (jiu-api)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: jiu-api
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: jiu-api/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate audit report (JSON)
+        if: always()
+        run: |
+          npm audit --json > audit-report.json 2>/dev/null || true
+          [ -s audit-report.json ] || echo '{}' > audit-report.json
+
+      - name: Upload audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: audit-api
+          path: jiu-api/audit-report.json
+          retention-days: 7
+
+      - name: Fail on high/critical vulnerabilities
+        run: npm audit --audit-level=high
+
+  audit-app:
+    name: Dependency Audit (jiu-app)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: jiu-app
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: jiu-app/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate audit report (JSON)
+        if: always()
+        run: |
+          npm audit --json > audit-report.json 2>/dev/null || true
+          [ -s audit-report.json ] || echo '{}' > audit-report.json
+
+      - name: Upload audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: audit-app
+          path: jiu-app/audit-report.json
+          retention-days: 7
+
+      - name: Fail on high/critical vulnerabilities
+        run: npm audit --audit-level=high
+
+  codeql:
+    name: CodeQL Static Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+          build-mode: none
+          queries: security-and-quality
+
+      - name: Perform CodeQL analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:javascript-typescript"
+
+  close-pr-on-vulnerabilities:
+    name: Close PR if vulnerabilities found
+    runs-on: ubuntu-latest
+    needs: [audit-api, audit-app, codeql]
+    if: always() && contains(join(needs.*.result, ','), 'failure')
+    steps:
+      - name: Download audit reports
+        uses: actions/download-artifact@v4
+        with:
+          pattern: audit-*
+          path: reports
+
+      - name: Build detailed comment and close Pull Request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          AUDIT_API: ${{ needs.audit-api.result }}
+          AUDIT_APP: ${{ needs.audit-app.result }}
+          CODEQL: ${{ needs.codeql.result }}
+        run: |
+          {
+            echo "## 🚫 Pull Request fechado automaticamente"
+            echo ""
+            echo "Foram detectadas **vulnerabilidades de segurança** neste Pull Request. Por motivos de segurança, ele foi fechado para impedir o merge na branch \`main\`."
+            echo ""
+            echo "### Resultado das verificações"
+            echo ""
+            echo "| Verificação | Resultado |"
+            echo "|---|---|"
+            echo "| Auditoria de dependências (jiu-api) | ${AUDIT_API} |"
+            echo "| Auditoria de dependências (jiu-app) | ${AUDIT_APP} |"
+            echo "| Análise estática (CodeQL) | ${CODEQL} |"
+            echo ""
+          } > comment.md
+
+          # Detalha as vulnerabilidades de dependências de cada projeto
+          for project in api app; do
+            RESULT_VAR=$([ "$project" = "api" ] && echo "$AUDIT_API" || echo "$AUDIT_APP")
+            REPORT="reports/audit-${project}/audit-report.json"
+            if [ "$RESULT_VAR" = "failure" ] && [ -f "$REPORT" ]; then
+              {
+                echo "### 📦 jiu-${project} — vulnerabilidades em dependências"
+                echo ""
+                echo "| Pacote | Severidade | Correção disponível |"
+                echo "|---|---|---|"
+                node -e '
+                  const json = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"));
+                  const vulns = json.vulnerabilities || {};
+                  for (const [name, v] of Object.entries(vulns)) {
+                    if (v.severity !== "high" && v.severity !== "critical") continue;
+                    let fix = "não";
+                    if (v.fixAvailable && typeof v.fixAvailable === "object") {
+                      fix = v.fixAvailable.name + "@" + (v.fixAvailable.version || "?");
+                    } else if (v.fixAvailable === true) {
+                      fix = "sim (npm audit fix)";
+                    }
+                    console.log("| " + name + " | " + v.severity + " | " + fix + " |");
+                  }
+                ' "$REPORT"
+                echo ""
+                echo "> Rode \`npm audit\` em \`jiu-${project}\` para o relatório completo."
+                echo ""
+              } >> comment.md
+            fi
+          done
+
+          # Detalha os alertas do CodeQL na branch do PR
+          if [ "$CODEQL" = "failure" ]; then
+            HEAD_REF=$(gh pr view "$PR_NUMBER" --json headRefName --jq '.headRefName')
+            ALERTS=$(gh api "repos/${GITHUB_REPOSITORY}/code-scanning/alerts?ref=refs/heads/${HEAD_REF}&state=open&per_page=30" \
+              --jq '.[] | "| \(.rule.id) | \(.rule.security_severity_level // .rule.severity // "unknown") | `\(.most_recent_instance.location.path):\(.most_recent_instance.location.start_line)` | \(.rule.description | gsub("[\r\n|]+"; " ")) |"' 2>/dev/null || true)
+            {
+              echo "### 🔍 CodeQL — alertas de análise estática"
+              echo ""
+              if [ -n "$ALERTS" ]; then
+                echo "| Regra | Severidade | Local | Descrição |"
+                echo "|---|---|---|---|"
+                echo "$ALERTS"
+                echo ""
+                echo "> Veja também a aba **Security > Code scanning** para o detalhamento completo de cada alerta."
+              else
+                echo "O job do CodeQL falhou, mas não foi possível listar os alertas via API. Verifique os logs do job **CodeQL Static Analysis** e a aba **Security > Code scanning**."
+              fi
+              echo ""
+            } >> comment.md
+          fi
+
+          {
+            echo "### Como corrigir"
+            echo ""
+            echo "1. **Dependências:** rode \`npm audit\` nos diretórios apontados e atualize os pacotes (\`npm audit fix\` ou ajuste manual no \`package.json\`)."
+            echo "2. **CodeQL:** corrija o código nos arquivos/linhas indicados acima."
+            echo "3. Envie as correções para a branch e abra um novo Pull Request."
+            echo ""
+            echo "Consulte \`docs/security-scan-pipeline.md\` para mais detalhes sobre este pipeline."
+          } >> comment.md
+
+          gh pr comment "$PR_NUMBER" --body-file comment.md
+          gh pr close "$PR_NUMBER"
