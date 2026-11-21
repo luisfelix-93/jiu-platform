@@ -60,7 +60,7 @@ export class AuthService {
         // 1. Check if token exists in DB
         const storedToken = await refreshTokenRepository.findOne({
             where: { token },
-            relations: ["user"]
+            relations: { user: true }
         });
 
         if (!storedToken) throw new Error("Invalid refresh token");

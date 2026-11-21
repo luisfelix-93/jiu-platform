@@ -20,14 +20,14 @@ export class ContentService {
     static async getLessonContent(lessonId: string) {
         return await contentRepository.find({
             where: { lessonId },
-            relations: ["createdBy"]
+            relations: { createdBy: true }
         });
     }
 
     static async getContentById(id: string) {
         const content = await contentRepository.findOne({
             where: { id },
-            relations: ["lesson"]
+            relations: { lesson: true }
         });
         if (!content) throw new Error("Content not found");
         return content;
@@ -41,7 +41,7 @@ export class ContentService {
 
         // Fetch data with pagination
         const [data, total] = await contentRepository.findAndCount({
-            relations: ["lesson"],
+            relations: { lesson: true },
             skip,
             take: limit
         });

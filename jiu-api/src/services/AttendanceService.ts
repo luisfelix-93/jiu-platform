@@ -17,7 +17,7 @@ export class AttendanceService {
 
         const lesson = await lessonRepository.findOne({
             where: { id: lessonId },
-            relations: ["class", "professor"]
+            relations: { class: true, professor: true }
         });
         if (!lesson) throw new Error("Lesson not found");
 
@@ -94,7 +94,7 @@ export class AttendanceService {
     static async getLessonAttendance(lessonId: string) {
         return await attendanceRepository.find({
             where: { lessonId },
-            relations: ["user"]
+            relations: { user: true }
         });
     }
 
@@ -124,7 +124,7 @@ export class AttendanceService {
         // Fetch attendances sorted by createdAt descending as baseline
         const attendances = await attendanceRepository.find({
             where: { userId, status: 'present' },
-            relations: ["lesson", "lesson.class"],
+            relations: { lesson: { class: true } },
             order: {
                 createdAt: "DESC"
             }
@@ -237,7 +237,7 @@ export class AttendanceService {
         });
 
         // 5. Graduation Info
-        const user = await userRepository.findOne({ where: { id: userId }, select: ["beltColor", "stripeCount", "nextGraduationGoal"] });
+        const user = await userRepository.findOne({ where: { id: userId }, select: { beltColor: true, stripeCount: true, nextGraduationGoal: true } });
         const graduation = user ? {
             beltColor: user.beltColor,
             stripeCount: user.stripeCount,

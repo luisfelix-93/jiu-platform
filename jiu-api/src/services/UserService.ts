@@ -16,7 +16,7 @@ export class UserService {
     static async getProfile(userId: string) {
         const user = await userRepository.findOne({
             where: { id: userId },
-            select: ["id", "name", "email", "role", "beltColor", "stripeCount", "avatarUrl", "isActive", "createdAt", "birthDate"],
+            select: { id: true, name: true, email: true, role: true, beltColor: true, stripeCount: true, avatarUrl: true, isActive: true, createdAt: true, birthDate: true },
         });
 
         if (!user) throw new Error("User not found");
@@ -65,12 +65,25 @@ export class UserService {
         const students = await userRepository.createQueryBuilder("user")
             .select(["user.id", "user.name", "user.beltColor", "user.stripeCount", "user.nextGraduationGoal", "user.avatarUrl", "user.lastGraduationDate"])
             .where("user.role = :role", { role: UserRole.ALUNO })
-            .loadRelationCountAndMap("user.attendanceCount", "user.attendances", "attendance", qb =>
-                qb.innerJoin("attendance.user", "userAlias")
-                  .where("attendance.status = :status", { status: "present" })
-                  .andWhere(`"attendance"."created_at" > COALESCE("userAlias"."last_graduation_date", '1970-01-01')`)
-            )
             .getMany();
+
+        if (students.length === 0) return students;
+
+        // TypeORM 1.x removed loadRelationCountAndMap; count attendances manually
+        const counts = await attendanceRepository.createQueryBuilder("attendance")
+            .select("attendance.user_id", "userId")
+            .addSelect("COUNT(*)", "count")
+            .innerJoin("attendance.user", "userAlias")
+            .where("attendance.status = :status", { status: "present" })
+            .andWhere(`"attendance"."created_at" > COALESCE("userAlias"."last_graduation_date", '1970-01-01')`)
+            .andWhere("attendance.user_id IN (:...studentIds)", { studentIds: students.map((s) => s.id) })
+            .groupBy("attendance.user_id")
+            .getRawMany<{ userId: string; count: string }>();
+
+        const countByUserId = new Map(counts.map((c) => [c.userId, Number(c.count)]));
+        for (const student of students) {
+            (student as User & { attendanceCount: number }).attendanceCount = countByUserId.get(student.id) ?? 0;
+        }
 
         return students;
     }

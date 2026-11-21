@@ -1,8 +1,8 @@
-import nodemailer from "nodemailer";
+import nodemailer, { Transporter } from "nodemailer";
 import { emailConfig } from "../config/email.config";
 
 export class EmailService {
-    private static transporter: nodemailer.Transporter | null = null;
+    private static transporter: Transporter | null = null;
 
     private static getTransporter() {
         if (!this.transporter) {
