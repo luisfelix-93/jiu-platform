@@ -93,7 +93,7 @@ export class AcademyService {
     static async getAcademiesByProfessor(professorId: string) {
         const links = await academyProfessorRepository.find({
             where: { professorId },
-            relations: ["academy"],
+            relations: { academy: true },
         });
         return links.map((link) => ({ ...link.academy, role: link.role }));
     }
@@ -101,7 +101,7 @@ export class AcademyService {
     static async getAcademiesByStudent(studentId: string) {
         const links = await studentAcademyRepository.find({
             where: { studentId, isActive: true },
-            relations: ["academy"],
+            relations: { academy: true },
         });
         return links.map((link) => ({ ...link.academy, enrolledAt: link.enrolledAt }));
     }
@@ -210,14 +210,14 @@ export class AcademyService {
         if (user.role === UserRole.PROFESSOR || user.role === UserRole.ADMIN) {
             const links = await academyProfessorRepository.find({
                 where: { professorId: userId },
-                select: ["academyId"],
+                select: { academyId: true },
             });
             return links.map((l) => l.academyId);
         }
 
         const links = await studentAcademyRepository.find({
             where: { studentId: userId, isActive: true },
-            select: ["academyId"],
+            select: { academyId: true },
         });
         return links.map((l) => l.academyId);
     }

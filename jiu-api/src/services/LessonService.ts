@@ -70,7 +70,7 @@ export class LessonService {
     static async getLessonById(id: string) {
         const lesson = await lessonRepository.findOne({
             where: { id },
-            relations: ["class", "professor"]
+            relations: { class: true, professor: true }
         });
         if (!lesson) throw new Error("Lesson not found");
         return lesson;

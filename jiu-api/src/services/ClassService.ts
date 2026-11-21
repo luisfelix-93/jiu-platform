@@ -24,19 +24,19 @@ export class ClassService {
                 where: {
                     academyId: In(academyIds)
                 },
-                relations: ["academy"]
+                relations: { academy: true }
             });
         }
 
         return await classRepository.find({
-            relations: ["academy"]
+            relations: { academy: true }
         });
     }
 
     static async getClassById(id: string) {
         const cls = await classRepository.findOne({
             where: { id },
-            relations: ["academy"]
+            relations: { academy: true }
         });
         if (!cls) throw new Error("Class not found");
         return cls;
@@ -64,7 +64,7 @@ export class ClassService {
     static async getClassStudents(classId: string) {
         return await enrollmentRepository.find({
             where: { classId },
-            relations: ["user"]
+            relations: { user: true }
         });
     }
 

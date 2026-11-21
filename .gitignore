@@ -3,6 +3,7 @@ node_modules/
 pnpm-lock.yaml
 yarn.lock
 package-lock.json
+!jiu-app/package-lock.json
 
 # Testing
 coverage/
